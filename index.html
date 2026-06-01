@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go Live Alpina 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#00102E;--blue:#003DA5;--red:#E4002B;--g-blue:#4285F4;--g-red:#EA4335;--g-yellow:#FBBC05;--g-green:#34A853;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Nunito',sans-serif;background:var(--navy);color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,61,165,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,61,165,0.05) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+.topbar{position:fixed;top:0;left:0;right:0;height:5px;display:flex;z-index:10;}
+.topbar div{flex:1;}
+.wrap{max-width:600px;width:100%;position:relative;z-index:1;text-align:center;}
+h1{font-family:'Montserrat',sans-serif;font-size:clamp(2rem,6vw,3.5rem);font-weight:900;line-height:1;margin-bottom:.5rem;letter-spacing:-2px;}
+.sub{font-size:14px;color:#7B9AC4;margin-bottom:2rem;letter-spacing:2px;text-transform:uppercase;}
+.section-label{font-size:10px;color:#4A6FA5;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin:1.25rem 0 .5rem;text-align:left;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:.5rem;}
+.card{background:#001847;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:1.1rem;text-decoration:none;color:#fff;transition:transform .15s,box-shadow .2s;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.c-blue::before{background:var(--g-blue);}
+.c-green::before{background:var(--g-green);}
+.c-red::before{background:var(--g-red);}
+.c-yellow::before{background:var(--g-yellow);}
+.c-purple::before{background:#8B5CF6;}
+.c-orange::before{background:#F97316;}
+.c-teal::before{background:#14B8A6;}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,61,165,0.3);}
+.card-icon{font-size:1.6rem;}
+.card-title{font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;}
+.card-sub{font-size:11px;color:#7B9AC4;}
+.card-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;display:inline-block;width:fit-content;}
+.b-facilitador{background:rgba(66,133,244,.15);color:var(--g-blue);}
+.b-jugador{background:rgba(52,168,83,.15);color:var(--g-green);}
+.b-todos{background:rgba(251,188,5,.15);color:var(--g-yellow);}
+.b-qr{background:rgba(249,115,22,.15);color:#F97316;}
+.footer{font-size:11px;color:#4A6FA5;letter-spacing:1px;text-transform:uppercase;margin-top:1.5rem;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="background:#4285F4"></div>
+  <div style="background:#E4002B"></div>
+  <div style="background:#FBBC05"></div>
+  <div style="background:#34A853"></div>
+</div>
+<div class="wrap">
+  <h1>Go Live<br>Alpina 2026</h1>
+  <p class="sub">Google Workspace · Servinformación</p>
+
+  <p class="section-label">📋 Registro</p>
+  <div class="grid">
+    <a class="card c-blue" href="alpina_pasaporte_registro.html">
+      <div class="card-icon">🎫</div>
+      <div class="card-title">Pasaporte Digital</div>
+      <div class="card-sub">Regístrate y obtén tu código</div>
+      <span class="card-badge b-todos">Todos los alpinistas</span>
+    </a>
+    <a class="card c-red" href="alpina_leaderboard.html">
+      <div class="card-icon">🏆</div>
+      <div class="card-title">Leaderboard</div>
+      <div class="card-sub">Cumbre Alpina — ranking en vivo</div>
+      <span class="card-badge b-facilitador">Pantalla grande</span>
+    </a>
+  </div>
+
+  <p class="section-label">❓ Quiz Alpinista</p>
+  <div class="grid">
+    <a class="card c-blue" href="alpina_quiz_jugador.html">
+      <div class="card-icon">📱</div>
+      <div class="card-title">Quiz — Jugador</div>
+      <div class="card-sub">Responde desde tu celular</div>
+      <span class="card-badge b-jugador">Jugadores</span>
+    </a>
+    <a class="card c-blue" href="alpina_quiz_facilitador.html">
+      <div class="card-icon">🎮</div>
+      <div class="card-title">Quiz — Panel</div>
+      <div class="card-sub">Control del facilitador</div>
+      <span class="card-badge b-facilitador">Facilitador</span>
+    </a>
+  </div>
+
+  <p class="section-label">🎡 Ruleta Workspace</p>
+  <div class="grid">
+    <a class="card c-green" href="alpina_ruleta_jugador.html">
+      <div class="card-icon">📱</div>
+      <div class="card-title">Ruleta — Jugador</div>
+      <div class="card-sub">Responde desde tu celular</div>
+      <span class="card-badge b-jugador">Jugadores</span>
+    </a>
+    <a class="card c-green" href="alpina_ruleta_facilitador.html">
+      <div class="card-icon">🎯</div>
+      <div class="card-title">Ruleta — Panel</div>
+      <div class="card-sub">Control del facilitador</div>
+      <span class="card-badge b-facilitador">Facilitador</span>
+    </a>
+  </div>
+
+  <p class="section-label">🔐 Escape Room Google</p>
+  <div class="grid">
+    <a class="card c-orange" href="alpina_escape_room_qr.html">
+      <div class="card-icon">✅</div>
+      <div class="card-title">Escape Room — Confirmar puntos</div>
+      <div class="card-sub">QR de validación al completar</div>
+      <span class="card-badge b-qr">Participantes</span>
+    </a>
+  </div>
+
+  <p class="section-label">🤖 AI Showdown</p>
+  <div class="grid">
+    <a class="card c-purple" href="alpina_ai_showdown.html">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">AI Showdown</div>
+      <div class="card-sub">Preguntas generadas por IA · Práctica individual</div>
+      <span class="card-badge b-todos">Todos · Sin puntos al leaderboard</span>
+    </a>
+  </div>
+
+  <p class="section-label">📸 Photobooth · 🎤 Conferencias</p>
+  <div class="grid">
+    <a class="card c-teal" href="alpina_photobooth_qr.html">
+      <div class="card-icon">📸</div>
+      <div class="card-title">Photobooth — Puntos</div>
+      <div class="card-sub">QR de confirmación · +15 pts</div>
+      <span class="card-badge b-qr">Participantes</span>
+    </a>
+    <a class="card c-yellow" href="alpina_conf_1_qr.html">
+      <div class="card-icon">🎤</div>
+      <div class="card-title">Conferencia 1</div>
+      <div class="card-sub">+10 pts · QR al final de la charla</div>
+      <span class="card-badge b-qr">Participantes</span>
+    </a>
+    <a class="card c-yellow" href="alpina_conf_2_qr.html">
+      <div class="card-icon">🎤</div>
+      <div class="card-title">Conferencia 2</div>
+      <div class="card-sub">+15 pts · QR al final de la charla</div>
+      <span class="card-badge b-qr">Participantes</span>
+    </a>
+    <a class="card c-yellow" href="alpina_conf_3_qr.html">
+      <div class="card-icon">🎤</div>
+      <div class="card-title">Conferencia 3</div>
+      <div class="card-sub">+20 pts · QR al final de la charla</div>
+      <span class="card-badge b-qr">Participantes</span>
+    </a>
+    <a class="card c-yellow" href="alpina_conf_4_qr.html">
+      <div class="card-icon">🎤</div>
+      <div class="card-title">Conferencia 4</div>
+      <div class="card-sub">+25 pts · QR al final de la charla</div>
+      <span class="card-badge b-qr">Participantes</span>
+    </a>
+  </div>
+
+  <p class="footer">Alpina × Google Workspace × Servinformación · 2026</p>
+</div>
+</body>
+</html>
