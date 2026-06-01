@@ -341,7 +341,7 @@ function launchQuestion(preferAlpina){
   document.getElementById('qTool').textContent=q.tool?.toUpperCase()+' · '+(q.type==='alpina'?'SITUACIÓN ALPINA':'GOOGLE WORKSPACE');
   document.getElementById('qPreview').textContent=q.q||q.question||'';
   document.getElementById('qOptsPreview').innerHTML=(q.opts||[]).map((o,i)=>
-    `<div class="opt-card ${i===q.correct?'correct-opt':''}">`+
+    `<div class="opt-card opt-card-${i} -opt':''}">`+
     `<span class="opt-letter">${['A','B','C','D'][i]}</span>${o}</div>`
   ).join('');
 
@@ -382,6 +382,8 @@ async function closeQ(){
   if(phase!=='question')return;
   clearInterval(timerInt);clearInterval(feedInt);
   phase='closed';
+  // Revelar respuesta correcta en el panel del facilitador
+  if(currentQ) revelarCorrecta(currentQ);
 
   const snap=await db.ref('ruleta/answers/'+currentQId).once('value');
   const data=snap.val()||{};
@@ -532,6 +534,26 @@ function renderRanking(){
     ).join('');
   }).catch(()=>{});
 }
+
+  // Revelar respuesta correcta en panel del facilitador
+  function revelarCorrecta(q) {
+    // Selecciona todas las opciones del panel del facilitador por posición
+    const opts = document.querySelectorAll('#qOptsPreview .opt-card, #qOptsPreview [class*="opt-fac"], #qOptsPreview [class*="opt-rul"]');
+    const allOpts = opts.length ? opts : document.querySelectorAll('#qOptsPreview > div');
+    allOpts.forEach((el, i) => {
+      if (i === q.correct) {
+        el.style.borderColor = 'var(--g-green)';
+        el.style.background = 'rgba(52,168,83,.15)';
+        el.style.color = '#34A853';
+        el.style.transform = 'scale(1.02)';
+        el.style.transition = 'all .3s ease';
+      } else {
+        el.style.opacity = '0.4';
+        el.style.transition = 'all .3s ease';
+      }
+    });
+  }
+
 </script>
 </body>
 </html>

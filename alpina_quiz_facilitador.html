@@ -323,7 +323,7 @@ function loadQ(idx){
   document.getElementById('qNumLabel').textContent='Preg '+(idx+1)+'/5';
   document.getElementById('qTool').textContent=q.tool.toUpperCase()+' · '+q.level.toUpperCase();
   document.getElementById('qPreview').textContent=q.q;
-  document.getElementById('qOptsPreview').innerHTML=q.opts.map((o,i)=>`<div class="opt-card ${i===q.correct?'correct-opt':''}"><span class="opt-letter">${['A','B','C','D'][i]}</span>${o}</div>`).join('');
+  document.getElementById('qOptsPreview').innerHTML=q.opts.map((o,i)=>`<div class="opt-card opt-fac-${i}"><span class="opt-letter">${['A','B','C','D'][i]}</span>${o}</div>`).join('');
 }
 
 function setBanner(type,msg){const b=document.getElementById('phaseBanner');b.className='phase-banner ph-'+type;b.textContent=msg;}
@@ -356,6 +356,9 @@ async function closeQ(){
   if(phase!=='question')return;
   clearInterval(timerInt); phase='closed';
   const qs=getQS(); if(!qs)return;
+  // Revelar respuesta correcta en el panel del facilitador
+  const qActual = roundQuestions[currentQ];
+  if(qActual) revelarCorrecta(qActual);
   // Read winners from Firebase
   const lb = getLB();
   let correct = [];
