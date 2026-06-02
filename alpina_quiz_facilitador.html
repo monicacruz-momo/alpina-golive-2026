@@ -352,74 +352,81 @@ function startCountdown(secs,onEnd){
   timerInt=setInterval(()=>{t--;el.textContent=t;el.className='timer-display'+(t>10?'':t>5?' warn':' danger');if(t<=0){clearInterval(timerInt);onEnd();}},1000);
 }
 
-async async function closeQ(){
+async function closeQ(){
   if(phase!=='question')return;
-  clearInterval(timerInt); phase='closed';
-  const qs=getQS();
-  // Revelar respuesta correcta en el panel del facilitador
+
+  // ── 1. Detener timer y poll ANTES de cualquier async ─────────────────
+  clearInterval(timerInt);
+  if(pollInt){ clearInterval(pollInt); pollInt=null; }
+  phase='closed';
+
+  // ── 2. Habilitar botones INMEDIATAMENTE — sin esperar Firebase ────────
+  const isLast = currentQ>=4;
+  document.getElementById('btnClose').disabled  = true;
+  document.getElementById('btnLaunch').disabled = true;
+  document.getElementById('btnNext').disabled   = isLast;
+  document.getElementById('btnEnd').disabled    = !isLast;
+  setBanner('closed','■ Cerrada — '+(isLast?'fin de ronda':'pulsa Siguiente'));
+
+  // ── 3. Revelar respuesta correcta en pantalla del facilitador ─────────
   const qActual = roundQuestions[currentQ];
   if(qActual) revelarCorrecta(qActual);
-  // Si qs no existe, habilitar botones igualmente para no bloquear
-  if(!qs){
-    const isLast=currentQ>=4;
-    document.getElementById('btnNext').disabled=isLast;
-    document.getElementById('btnEnd').disabled=!isLast;
-    return;
-  }
-  // Read winners from Firebase
+
+  // ── 4. Obtener qId de la pregunta activa ──────────────────────────────
+  // Construirlo directamente sin depender de getQS()
+  const qId = 'q_'+currentRoundId+'_'+currentQ;
+
+  // ── 5. Leer resultados de Firebase con timeout 3s ─────────────────────
   const lb = getLB();
   let correct = [];
-  try {
-    // Timeout de 3 segundos — si Firebase tarda, continúa con datos locales
-    const firebasePromise = db.ref('quiz/answers/'+qs.qId).once('value');
-    const timeoutPromise  = new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')), 3000));
-    const snap = await Promise.race([firebasePromise, timeoutPromise]);
-    const data = snap.val() || {};
+  try{
+    const snap = await Promise.race([
+      db.ref('quiz/answers/'+qId).once('value'),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
+    ]);
+    const data = snap.val()||{};
     correct = Object.values(data)
       .filter(a=>a.correct)
       .sort((a,b)=>a.ts-b.ts)
-      .map(a=>({code:a.codigo, name:a.nombre||a.codigo, ts:a.ts}));
-  } catch(e) {
-    // Fallback: usar datos del leaderboard local
-    correct = Object.entries(lb)
-      .filter(([c,p])=>p.quizAnswers&&p.quizAnswers[qs.qId]&&p.quizAnswers[qs.qId].correct)
-      .map(([c,p])=>({code:c,name:p.name,ts:p.quizAnswers[qs.qId].ts}))
-      .sort((a,b)=>a.ts-b.ts);
+      .map(a=>({code:a.codigo,name:a.nombre||a.codigo,ts:a.ts}));
+  }catch(e){
+    log('Firebase timeout — usando datos locales');
+    correct=[];
   }
+
+  // ── 6. Calcular y guardar puntos ──────────────────────────────────────
   correct.forEach((p,i)=>{
     const pts=PTS_MAP[i]||0;
     if(pts>0&&lb[p.code]){
       if(!lb[p.code].quizPts)lb[p.code].quizPts=0;
-      if(!lb[p.code].quizRoundPts)lb[p.code].quizRoundPts={};
       if(!lb[p.code].quizRoundsPlayed)lb[p.code].quizRoundsPlayed=0;
       lb[p.code].quizRoundsPlayed++;
-      const earnsPoints = lb[p.code].quizRoundsPlayed <= 2;
-      if(pts>0&&earnsPoints){
+      if(lb[p.code].quizRoundsPlayed<=2){
         lb[p.code].quizPts+=pts;
-        lb[p.code].quizRoundPts[qs.qId]=pts;
         if(!lb[p.code].pts)lb[p.code].pts=0;
         lb[p.code].pts+=pts;
       }
     }
   });
   saveLB(lb);
-  // Sync winners to Sheet
+
+  // ── 7. Sincronizar puntos con Sheet (en segundo plano) ────────────────
   correct.slice(0,3).forEach((p,i)=>{
-    const actKey = ['quiz_1','quiz_2','quiz_3'][i];
-    const pts = PTS_MAP[i]||0;
-    if(pts>0) sumarPuntosSheet(p.code, actKey, pts).catch(()=>{});
+    const actKey=['quiz_1','quiz_2','quiz_3'][i];
+    const pts=PTS_MAP[i]||0;
+    if(pts>0) sumarPuntosSheet(p.code,actKey,pts).catch(()=>{});
   });
+
+  // ── 8. Guardar estado y mostrar podio ─────────────────────────────────
   const topThree=correct.slice(0,3).map(p=>({name:lb[p.code]?.name||p.code,pts:lb[p.code]?.quizPts||0}));
-  saveQS({...qs,phase:'result',topThree});
-  setBanner('closed','■ Cerrada · '+(correct.length)+' respuestas correctas');
-  document.getElementById('btnClose').disabled=true;
-  document.getElementById('btnLaunch').disabled=true;
-  const isLast=currentQ>=4;
-  document.getElementById('btnNext').disabled=isLast;
-  document.getElementById('btnEnd').disabled=!isLast;
+  saveQS({phase:'result',qId,topThree});
   renderPodium(correct,lb);
-  log('Cerrada. Correctas: '+correct.length+' · 1°: '+(correct[0]?lb[correct[0].code]?.name:'—'));
+  log('Cerrada. Correctas: '+correct.length+(correct[0]?' · 1°: '+(lb[correct[0].code]?.name||correct[0].code):''));
+
+  // ── 9. Reiniciar poll para la siguiente pregunta ──────────────────────
+  pollInt=setInterval(updateFeed,1200);
 }
+
 
 function renderPodium(winners,lb){
   const medals=['🥇','🥈','🥉'];
