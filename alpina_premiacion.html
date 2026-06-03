@@ -90,8 +90,8 @@ body::before{
 
 /* Contenido principal: dos columnas */
 .main{
-  flex:1;display:grid;
-  grid-template-columns:1fr 1fr;
+  flex:1;display:flex;
+  flex-direction:column;
   gap:0;overflow:hidden;
   position:relative;z-index:1;
 }
@@ -126,6 +126,11 @@ body::before{
 }
 .winners-list::-webkit-scrollbar{width:3px;}
 .winners-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* Grid de kit menor */
+#listKit .winner-row{margin-bottom:.2rem;}
+#listKit::-webkit-scrollbar{width:3px;}
+#listKit::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
 /* Fila ganador */
 .winner-row{
@@ -252,8 +257,8 @@ body::before{
     <span class="badge badge-live"><span class="live-dot"></span>EN VIVO</span>
   </div>
   <div class="header-right">
-    <span class="badge badge-gold">🥇 Kit Full Combo — 41 ganadores</span>
-    <span class="badge badge-silver">🥈 Kit Digital — 59 ganadores</span>
+    <span class="badge badge-gold">🥇 Top 5 — Premio Sorpresa</span>
+    <span class="badge badge-silver">🎁 Lugares 6–15 — Kit de elementos</span>
   </div>
 </div>
 
@@ -261,11 +266,11 @@ body::before{
 <div class="stats-bar">
   <div class="stat-item">👥 Participantes: <strong id="stTotal">—</strong></div>
   <div class="stat-sep"></div>
-  <div class="stat-item">🏆 Premiados: <strong id="stPremiados">100</strong></div>
+  <div class="stat-item">🏆 Premiados: <strong id="stPremiados">15</strong></div>
   <div class="stat-sep"></div>
   <div class="stat-item">⭐ Puntaje más alto: <strong id="stMax">—</strong></div>
   <div class="stat-sep"></div>
-  <div class="stat-item">📊 Corte 1er→2do: <strong id="stCorte">—</strong></div>
+  <div class="stat-item">📊 Corte top5→kit: <strong id="stCorte">—</strong></div>
   <div class="stat-sep"></div>
   <div class="stat-item" id="stActualizacion" style="margin-left:auto;">Actualizando…</div>
 </div>
@@ -273,37 +278,35 @@ body::before{
 <!-- Contenido: dos columnas -->
 <div class="main">
 
-  <!-- ── COLUMNA 1er LUGAR ── -->
-  <div class="col">
-    <div class="col-header col-header-gold">
-      <div class="col-title">
-        🥇 <span style="color:var(--gold)">1er Lugar</span>
-        <span class="badge badge-gold" style="font-size:9px;">41 personas</span>
+  <!-- ── SECCIÓN TOP 5 — PREMIO SORPRESA ── -->
+  <div style="flex-shrink:0;border-bottom:1px solid var(--border);">
+    <div class="col-header col-header-gold" style="padding:.5rem 1.5rem;">
+      <div class="col-title" style="font-size:1.05rem;">
+        🏆 <span style="color:var(--gold)">Top 5 — Premio Sorpresa</span>
+        <span class="badge badge-gold" style="font-size:9px;">5 ganadores</span>
       </div>
       <div class="col-prize">
-        <strong style="color:var(--gold)">Kit Full Combo</strong>
-        <span class="kit-icon">📓 🧰 🔌 🖊️ 🎨</span>
+        <strong style="color:var(--gold)">🎁 Premio Sorpresa</strong>
       </div>
     </div>
-    <div class="winners-list" id="listGold">
-      <div class="empty-state"><span class="spin">⚙️</span><span>Cargando ranking…</span></div>
+    <div id="listTop5" style="display:flex;flex-direction:row;gap:.5rem;padding:.6rem 1.5rem;overflow-x:auto;">
+      <div class="empty-state"><span class="spin">⚙️</span><span>Cargando…</span></div>
     </div>
   </div>
 
-  <!-- ── COLUMNA 2do LUGAR ── -->
-  <div class="col">
-    <div class="col-header col-header-silver">
-      <div class="col-title">
-        🥈 <span style="color:var(--silver2)">2do Lugar</span>
-        <span class="badge badge-silver" style="font-size:9px;">59 personas</span>
+  <!-- ── SECCIÓN LUGARES 6–15 — KIT MENOR ── -->
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+    <div class="col-header col-header-silver" style="padding:.5rem 1.5rem;flex-shrink:0;">
+      <div class="col-title" style="font-size:1.05rem;">
+        🎁 <span style="color:var(--silver2)">Lugares 6 al 15 — Kit de elementos</span>
+        <span class="badge badge-silver" style="font-size:9px;">10 ganadores</span>
       </div>
       <div class="col-prize">
-        <strong style="color:var(--silver2)">Kit Digital</strong>
-        <span class="kit-icon">🧰 🔌 🏷️</span>
+        <strong style="color:var(--silver2)">Kit de elementos</strong>
       </div>
     </div>
-    <div class="winners-list" id="listSilver">
-      <div class="empty-state"><span class="spin">⚙️</span><span>Cargando ranking…</span></div>
+    <div id="listKit" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:.25rem;padding:.5rem 1.5rem;align-content:start;">
+      <div class="empty-state" style="grid-column:1/-1;"><span class="spin">⚙️</span><span>Cargando…</span></div>
     </div>
   </div>
 
@@ -336,8 +339,8 @@ const db = firebase.database();
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const WEB_APP = 'https://script.google.com/macros/s/AKfycbyCLcnW9zebfbmjPiH8-9_JXRDOr53NHC_vmRKR0zkwiRr8cvxj8yrNaFYl2f9ZyzzhMw/exec';
-const PRIMER_LUGAR_N  = 41;   // cuántas personas reciben kit 1er lugar
-const SEGUNDO_LUGAR_N = 59;   // cuántas personas reciben kit 2do lugar
+const TOP_SORPRESA_N  = 5;    // top 5 → premio sorpresa
+const KIT_MENOR_N     = 10;   // posiciones 6-16 → kit menor (6 al 15)
 
 // ── Emojis de posición ────────────────────────────────────────────────────────
 function posEmoji(i) {
@@ -383,91 +386,75 @@ function renderRow(p, globalPos, grupo, showTieBadge) {
 // ── Renderizar las listas ─────────────────────────────────────────────────────
 function renderListas(ranking) {
   if (!ranking || ranking.length === 0) {
-    document.getElementById('listGold').innerHTML =
-      '<div class="empty-state">😕 Sin datos aún</div>';
-    document.getElementById('listSilver').innerHTML =
-      '<div class="empty-state">😕 Sin datos aún</div>';
+    document.getElementById('listTop5').innerHTML = '<div class="empty-state">😕 Sin datos aún</div>';
+    document.getElementById('listKit').innerHTML  = '<div class="empty-state">😕 Sin datos aún</div>';
     return;
   }
 
-  // Ordenar: por puntos desc, empates se ordenan aleatoriamente (seed fijo por nombre para ser consistente)
-  // El seed fijo garantiza que el orden de empates no cambie en cada refresh
+  // Ordenar por puntos desc, empates con hash determinístico del nombre
   const sorted = [...ranking].sort((a, b) => {
     const diff = (b.total || 0) - (a.total || 0);
     if (diff !== 0) return diff;
-    // Empate: usar hash simple del nombre como desempate determinístico
     const hashA = (a.nombre || a.codigo || '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
     const hashB = (b.nombre || b.codigo || '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
     return hashA - hashB;
   });
 
-  // Determinar el puntaje en el corte (posición 41)
-  const corteIdx    = Math.min(PRIMER_LUGAR_N, sorted.length) - 1;
-  const cortePts    = sorted[corteIdx] ? (sorted[corteIdx].total || 0) : 0;
-  const siguiente   = sorted[corteIdx + 1] ? (sorted[corteIdx + 1].total || 0) : null;
-
   // Stats
-  document.getElementById('stTotal').textContent    = sorted.length;
-  document.getElementById('stPremiados').textContent = Math.min(100, sorted.length);
-  document.getElementById('stMax').textContent       = sorted[0] ? (sorted[0].total || 0) + ' pts' : '—';
-  if (cortePts !== null && siguiente !== null) {
-    document.getElementById('stCorte').textContent = cortePts + ' pts';
-  }
+  document.getElementById('stTotal').textContent     = sorted.length;
+  document.getElementById('stPremiados').textContent  = Math.min(TOP_SORPRESA_N + KIT_MENOR_N, sorted.length);
+  document.getElementById('stMax').textContent        = sorted[0] ? (sorted[0].total || 0) + ' pts' : '—';
+  document.getElementById('stCorte').textContent      = sorted[TOP_SORPRESA_N] ? (sorted[TOP_SORPRESA_N].total || 0) + ' pts' : '—';
 
-  // Separar grupos
-  const goldList   = sorted.slice(0, PRIMER_LUGAR_N);
-  const silverList = sorted.slice(PRIMER_LUGAR_N, PRIMER_LUGAR_N + SEGUNDO_LUGAR_N);
+  // Grupos
+  const top5List  = sorted.slice(0, TOP_SORPRESA_N);
+  const kitList   = sorted.slice(TOP_SORPRESA_N, TOP_SORPRESA_N + KIT_MENOR_N);
 
-  // Detectar empates en el corte
-  // Un participante "está en el corte" si su puntaje == cortePts y está en la posición límite
-  const tiePtsAtCut = cortePts;
-
-  // Renderizar Gold
-  let goldHTML = '';
-  let prevPts  = null;
-  let tieStarted = false;
-
-  goldList.forEach((p, i) => {
-    const globalPos = i;
-    const pts = p.total || 0;
-    const isTie = prevPts !== null && pts === prevPts;
-
-    // Mostrar separador "ZONA DE EMPATE EN EL CORTE" cuando llegamos al puntaje del corte
-    // y hay al menos uno en silver con el mismo puntaje
-    const silverHasSamePts = silverList.length > 0 && (silverList[0].total || 0) === tiePtsAtCut;
-    if (!tieStarted && pts === tiePtsAtCut && silverHasSamePts && i >= 1) {
-      tieStarted = true;
-      goldHTML += `
-        <div class="tie-cut-divider">
-          <div class="tie-cut-line"></div>
-          ⚡ ZONA DE EMPATE — prioridad por velocidad de respuesta
-          <div class="tie-cut-line"></div>
-        </div>`;
-    }
-
-    goldHTML += renderRow(p, globalPos, 'gold', isTie && pts === tiePtsAtCut && silverHasSamePts);
-    prevPts = pts;
+  // ── Top 5: tarjetas horizontales grandes ────────────────────────────────────
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+  const goldColors = ['#FBBC05','#E5E7EB','#CD7F32','#A78BFA','#60A5FA'];
+  let top5HTML = '';
+  top5List.forEach((p, i) => {
+    const col   = goldColors[i] || 'var(--gold)';
+    const name  = truncar(p.nombre || p.codigo, 20);
+    const pts   = p.total || 0;
+    top5HTML += `
+      <div style="
+        flex:1;min-width:160px;max-width:220px;
+        background:rgba(255,255,255,.04);
+        border:2px solid ${col};
+        border-radius:16px;padding:1rem .75rem;
+        text-align:center;flex-shrink:0;
+      ">
+        <div style="font-size:2rem;margin-bottom:.25rem;">${medals[i]}</div>
+        <div style="
+          width:44px;height:44px;border-radius:50%;
+          background:${col}22;border:2px solid ${col};
+          display:flex;align-items:center;justify-content:center;
+          font-family:var(--font-t);font-weight:900;font-size:1.1rem;
+          color:${col};margin:0 auto .5rem;
+        ">${inicial(p.nombre)}</div>
+        <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:.3rem;">${name}</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:.4rem;">${p.codigo || ''}</div>
+        <div style="font-family:var(--font-t);font-size:1.4rem;font-weight:900;color:${col};">${pts} pts</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:.2rem;letter-spacing:1px;">🎁 PREMIO SORPRESA</div>
+      </div>`;
   });
 
-  document.getElementById('listGold').innerHTML = goldHTML || '<div class="empty-state">—</div>';
+  document.getElementById('listTop5').innerHTML = top5HTML || '<div class="empty-state">—</div>';
 
-  // Renderizar Silver
-  let silverHTML = '';
-  prevPts = null;
-
-  silverList.forEach((p, i) => {
-    const globalPos = PRIMER_LUGAR_N + i;
-    const pts = p.total || 0;
-    const isTie = prevPts !== null && pts === prevPts;
-    silverHTML += renderRow(p, globalPos, 'silver', isTie && pts === tiePtsAtCut);
-    prevPts = pts;
+  // ── Lugares 6–15: grilla de 2 columnas ──────────────────────────────────────
+  let kitHTML = '';
+  kitList.forEach((p, i) => {
+    const globalPos = TOP_SORPRESA_N + i;
+    kitHTML += renderRow(p, globalPos, 'silver', false);
   });
 
-  document.getElementById('listSilver').innerHTML = silverHTML || '<div class="empty-state">—</div>';
+  document.getElementById('listKit').innerHTML = kitHTML || '<div class="empty-state">—</div>';
 
   // Timestamp
   const ts = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-  document.getElementById('footerTs').textContent = 'Última actualización: ' + ts;
+  document.getElementById('footerTs').textContent     = 'Última actualización: ' + ts;
   document.getElementById('stActualizacion').textContent = '🔄 Actualizado ' + ts;
 }
 
