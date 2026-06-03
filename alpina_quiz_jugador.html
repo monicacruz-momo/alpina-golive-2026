@@ -257,6 +257,17 @@ async function joinQuiz(){
   roundPts=0;
   document.getElementById('wCode').textContent=myCode;
 
+  // ── FIREBASE: registrar jugador en sala ──────────────────────────────────
+  db.ref('quiz/players/' + myCode).set({
+    nombre: myName,
+    codigo: myCode,
+    ts: Date.now()
+  });
+  // Limpiar registro al salir
+  window.addEventListener('beforeunload', () => {
+    db.ref('quiz/players/' + myCode).remove();
+  });
+
   // ── FIREBASE: escuchar estado en tiempo real ─────────────────────────────
   db.ref('quiz/state').on('value', snap=>{
     const qs = snap.val();

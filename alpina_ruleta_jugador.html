@@ -269,6 +269,16 @@ async function joinRuleta(){
   document.getElementById('wCode').textContent=myCode;
   document.getElementById('totalNum').textContent='…';
   show('sWait');
+
+  // ── FIREBASE: registrar jugador en sala ──────────────────────────────────
+  db.ref('ruleta/players/' + myCode).set({
+    nombre: myName,
+    codigo: myCode,
+    ts: Date.now()
+  });
+  window.addEventListener('beforeunload', () => {
+    db.ref('ruleta/players/' + myCode).remove();
+  });
   // Consultar al servidor los puntos reales y rondas de ruleta ya ganadas
   apiCall({action:'perfil', codigo:myCode}).then(res=>{
     if(res && res.status==='ok'){

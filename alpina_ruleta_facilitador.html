@@ -507,6 +507,7 @@ function newRound(){
   document.getElementById('podiumPanel').innerHTML='<p style="font-size:12px;color:var(--muted);text-align:center;padding:.5rem;">Al finalizar la ronda</p>';
   setBanner('waiting','Nueva ronda iniciada — Gira para la pregunta 1 de 3');
   db.ref('ruleta/state').set({phase:'waiting'});
+  db.ref('ruleta/answers').remove();  // limpiar respuestas anteriores
   log('Nueva ronda: '+roundNum);
 }
 

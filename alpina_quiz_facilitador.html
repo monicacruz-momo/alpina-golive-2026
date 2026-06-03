@@ -350,8 +350,9 @@ function init(){
   loadQ(0);
   setBanner('wait', '⏸ Listo para lanzar');
   setBtn('launch', true); setBtn('close', false); setBtn('next', false); setBtn('end', false);
-  // Limpiar Firebase state
+  // Limpiar Firebase state y jugadores de sesión anterior
   db.ref('quiz/state').set({phase:'waiting', roundNum});
+  db.ref('quiz/answers').remove();   // limpiar respuestas anteriores
   log('Ronda ' + roundNum + ' lista · ' + roundQs.length + ' preguntas');
   // Iniciar feed de conteo de jugadores
   clearInterval(feedInt);
@@ -607,10 +608,10 @@ function updateFeed(){
     }).catch(()=>{});
   }
   // Contar jugadores registrados
-  db.ref('quiz/players').once('value').then(snap=>{
+  db.ref('quiz/players').on('value', snap=>{
     const n = snap.val() ? Object.keys(snap.val()).length : 0;
-    document.getElementById('playerBadge').textContent = n + ' jugadores';
-  }).catch(()=>{});
+    document.getElementById('playerBadge').textContent = n + ' jugador' + (n===1?'':'es');
+  });
 }
 
 // ── RENDER BANCO ──────────────────────────────────────────────────────────
