@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- v3 -->
 <title>Alpina Quiz — Facilitador</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -139,7 +143,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('control')">Control</div>
-  <div class="tab" onclick="switchTab('banco')">Banco (40)</div>
+  <div class="tab" onclick="switchTab('banco')">Banco (60)</div>
   <div class="tab" onclick="switchTab('ranking')">Ranking</div>
 </div>
 
@@ -186,7 +190,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
     <!-- Tab Banco -->
     <div class="tab-panel" id="tab-banco">
-      <div class="card-label" style="margin-bottom:.5rem;">Banco de preguntas — 40 preguntas</div>
+      <div class="card-label" style="margin-bottom:.5rem;">Banco de preguntas — 60 preguntas</div>
       <div id="bancoList"></div>
     </div>
 
