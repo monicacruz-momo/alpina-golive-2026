@@ -289,16 +289,17 @@ const QUESTIONS=[
 ];
 
 // ── Estado global ─────────────────────────────────────────────────────────
-let phase       = 'idle';      // idle | question | closed
-let currentQ    = 0;           // índice 0-4
-let roundNum    = 1;
-let roundId     = 'r_' + Date.now();
-let roundQs     = [];          // 5 preguntas de la ronda
-let timerInt    = null;
-let feedInt     = null;
-let currentQId  = null;        // ID único de la pregunta activa
+let phase         = 'idle';      // idle | question | closed
+let currentQ      = 0;           // índice 0-4
+let roundNum      = 1;
+let roundId       = 'r_' + Date.now();
+let roundQs       = [];          // 5 preguntas de la ronda
+let timerInt      = null;
+let feedInt       = null;
+let currentQId    = null;        // ID único de la pregunta activa
+let roundWinners  = {};          // acumula {codigo: {nombre, pts}} durante la ronda
 
-const PTS = [15, 7, 5];        // 1°, 2°, 3°
+const PTS = [15, 7, 5];          // 1°, 2°, 3°
 
 // ── Utilidades ────────────────────────────────────────────────────────────
 function log(m){ document.getElementById('logBox').textContent = new Date().toLocaleTimeString('es-CO') + ' — ' + m; }
@@ -324,6 +325,7 @@ function init(){
   currentQ = 0;
   roundId  = 'r_' + Date.now();
   currentQId = null;
+  roundWinners = {};  // limpiar ganadores al iniciar ronda
   renderProgress();
   loadQ(0);
   setBanner('wait', '⏸ Listo para lanzar');
@@ -484,12 +486,14 @@ async function loadResults(){
       podium.innerHTML = '<p style="font-size:12px;color:var(--muted);text-align:center;padding:.5rem;">Nadie respondió correctamente</p>';
     }
 
-    // Guardar puntos en Sheet
+    // Acumular ganadores de esta pregunta en roundWinners (los puntos se suman al cerrar ronda)
     correct.slice(0,3).forEach((p,i)=>{
-      if(PTS[i]>0) sumarSheet(p.codigo, ['quiz_1','quiz_2','quiz_3'][i], PTS[i]);
+      const cod = p.codigo;
+      if(!roundWinners[cod]) roundWinners[cod] = {nombre: p.nombre||cod, pts: 0};
+      roundWinners[cod].pts += PTS[i]||0;
     });
 
-    log('Resultados: ' + correct.length + '/' + answers.length + ' correctas');
+    log('Resultados: ' + correct.length + '/' + answers.length + ' correctas · acum. ' + Object.keys(roundWinners).length + ' ganadores');
   }catch(e){
     log('Sin datos de Firebase (timeout)');
   }
@@ -512,11 +516,37 @@ function nextQ(){
 function endRound(){
   phase = 'idle';
   clearInterval(timerInt);
-  setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada');
+  setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada — enviando puntos…');
   setBtn('launch', false); setBtn('close', false); setBtn('next', false); setBtn('end', false);
-  db.ref('quiz/state').set({phase:'podium', roundNum});
+  // Construir topThree desde roundWinners para enviarlo al jugador
+  const topThree = Object.entries(roundWinners)
+    .sort((a,b)=>b[1].pts - a[1].pts)
+    .slice(0,3)
+    .map(([codigo, w])=>({ nombre: w.nombre, codigo, pts: w.pts }));
+
+  db.ref('quiz/state').set({phase:'podium', roundNum, topThree});
   renderRanking();
   switchTab('ranking');
+
+  // Enviar puntos acumulados de toda la ronda al Sheet (una sola vez por ronda)
+  const winners = Object.entries(roundWinners);
+  if(winners.length > 0){
+    let sent = 0;
+    winners.forEach(([codigo, w]) => {
+      sumarSheet(codigo, 'quiz_ronda_' + roundNum, w.pts).then(()=>{
+        sent++;
+        if(sent === winners.length){
+          setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada · puntos enviados ✓');
+          log('Puntos ronda ' + roundNum + ' enviados: ' + winners.map(([c,w])=>c+' +'+w.pts+'pts').join(', '));
+        }
+      });
+    });
+  } else {
+    setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada · sin ganadores');
+    log('Ronda ' + roundNum + ' finalizada — sin ganadores para sumar');
+  }
+
+  roundWinners = {}; // reset para la siguiente ronda
   log('Ronda ' + roundNum + ' finalizada');
 }
 

@@ -180,7 +180,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <p class="result-sub" id="podSub">—</p>
     </div>
     <div class="total-card">
-      <p class="total-lbl">Mis puntos Ruleta totales</p>
+      <p class="total-lbl">Mis puntos totales (todos los juegos)</p>
       <div class="total-num" id="podTotal">0</div>
     </div>
   </div>
@@ -212,14 +212,12 @@ async function apiCall(p={}) {
   return r.json();
 }
 
-const LB_KEY = 'alpina_lb_2025';
-let myCode='', answered=false, timerInt=null;
+let myCode='', myName='', answered=false, timerInt=null;
 let lastQId=null, lastPhase=null;
 let myCorrects=0, myRoundsWon=0, myRuletaPts=0;
 // Track per-round answers
 let roundAnswers = {}; // qId -> correct boolean
 
-function getLB(){try{return JSON.parse(localStorage.getItem(LB_KEY)||'{}')}catch(e){return{}}}
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function updateProgressDots(){
   const qIds=Object.keys(roundAnswers);
@@ -237,17 +235,53 @@ function updateProgressDots(){
   if(label) label.textContent=qIds.length+' / 3 respondidas';
 }
 
-function joinRuleta(){
+async function joinRuleta(){
   const code=document.getElementById('codeIn').value.trim().toUpperCase();
   const err=document.getElementById('loginErr');
   if(!code||code.length<2){err.textContent='Escribe tu código del Pasaporte';return;}
-  err.textContent=''; myCode=code;
+  err.textContent='Verificando código…';
+  const btn=document.querySelector('#sLogin .btn');
+  if(btn) btn.disabled=true;
+
+  // Validar código contra el Web App y obtener nombre real
+  try{
+    const res = await Promise.race([
+      apiCall({action:'perfil', codigo:code}),
+      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),6000))
+    ]);
+    if(res && res.status==='ok' && res.nombre){
+      myCode = res.codigo || code;
+      myName = res.nombre;
+    } else {
+      myCode = code; myName = code;
+      err.textContent = '⚠️ Código no encontrado. Entrando igual…';
+      await new Promise(r=>setTimeout(r,1800));
+    }
+  } catch(e){
+    myCode = code; myName = code;
+    err.textContent = '⚠️ Sin conexión al servidor. Entrando sin validar…';
+    await new Promise(r=>setTimeout(r,1500));
+  }
+
+  err.textContent='';
+  if(btn) btn.disabled=false;
+  myRuletaPts=0; myRoundsWon=0;
   document.getElementById('wCode').textContent=myCode;
-  const lb=getLB();
-  myRuletaPts=(lb[myCode]?.ruletaPts)||0;
-  myRoundsWon=(lb[myCode]?.ruletaRoundsWon)||0;
-  document.getElementById('totalNum').textContent=myRuletaPts;
+  document.getElementById('totalNum').textContent='…';
   show('sWait');
+  // Consultar al servidor los puntos reales y rondas de ruleta ya ganadas
+  apiCall({action:'perfil', codigo:myCode}).then(res=>{
+    if(res && res.status==='ok'){
+      // Total general
+      const total = res.puntos ?? (res.perfil?.total) ?? 0;
+      myRuletaPts = res.perfil?.ruleta ?? 0;
+      // Calcular rondas ganadas: cada ronda vale 10 pts
+      myRoundsWon = Math.floor(myRuletaPts / 10);
+      document.getElementById('totalNum').textContent=total;
+    } else {
+      document.getElementById('totalNum').textContent=0;
+    }
+  }).catch(()=>{ document.getElementById('totalNum').textContent=0; });
 
   db.ref('ruleta/state').on('value', snap=>{
     const qs=snap.val();
@@ -308,11 +342,10 @@ function submitAns(idx,qs,btn){
   btn.classList.add('selected');
   const isCorrect=idx===qs.correct;
   const ts=Date.now();
-  const lb=getLB(); const nombre=lb[myCode]?.name||myCode;
   roundAnswers[qs.qId]=isCorrect;
   updateProgressDots();
   db.ref('ruleta/answers/'+qs.qId+'/'+myCode).set({
-    codigo:myCode, nombre, ans:idx, correct:isCorrect, ts
+    codigo:myCode, nombre:myName, ans:idx, correct:isCorrect, ts
   });
   document.getElementById('sentMsg').style.display='block';
 }
@@ -377,6 +410,21 @@ function showPodium(qs){
   document.getElementById('podTotal').textContent=myRuletaPts;
   roundAnswers={};
   show('sPodium');
+  // Actualizar con el total real del servidor (incluye todos los juegos)
+  if(myCode){
+    setTimeout(()=>{
+      apiCall({action:'perfil', codigo:myCode}).then(res=>{
+        if(res && res.status==='ok'){
+          const total = res.puntos ?? (res.perfil?.total) ?? myRuletaPts;
+          document.getElementById('podTotal').textContent=total;
+          // Sincronizar rondas ganadas desde el servidor
+          const ruletaPtsReal = res.perfil?.ruleta ?? myRuletaPts;
+          myRoundsWon = Math.floor(ruletaPtsReal / 10);
+          myRuletaPts = ruletaPtsReal;
+        }
+      }).catch(()=>{});
+    }, 2500);
+  }
 }
 </script>
 </body>

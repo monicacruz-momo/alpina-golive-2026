@@ -172,6 +172,11 @@ body::before{content:'';position:fixed;inset:0;
       <p class="between-title">Tus puntos totales del Quiz</p>
       <div style="font-family:var(--font-t);font-size:2rem;font-weight:800;color:var(--g-blue);margin:.4rem 0" id="podMyPts">0</div>
       <p style="font-size:12px;color:var(--muted);">Espera la próxima ronda.</p>
+      <div style="margin-top:.75rem;background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);border-radius:12px;padding:.65rem 1rem;text-align:center;">
+        <p style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.2rem;">TU TOTAL LEADERBOARD</p>
+        <div style="font-family:var(--font-t);font-size:1.6rem;font-weight:900;color:var(--g-yellow);" id="podTotalAcum">—</div>
+        <p style="font-size:10px;color:var(--muted);margin-top:.2rem;">pts acumulados en todos los juegos</p>
+      </div>
     </div>
   </div>
 </div>
@@ -207,7 +212,7 @@ async function apiCall(p={}){
 
 // ── State ──────────────────────────────────────────────────────────────────
 const LB_KEY='alpina_lb_2025';
-let myCode='', roundPts=0, answered=false, timerInt=null;
+let myCode='', myName='', roundPts=0, answered=false, timerInt=null;
 let lastQId=null, lastPhase=null;
 const PTS_MAP=[15,7,5];
 
@@ -215,13 +220,43 @@ function getLB(){try{return JSON.parse(localStorage.getItem(LB_KEY)||'{}')}catch
 function saveLB(d){try{localStorage.setItem(LB_KEY,JSON.stringify(d))}catch(e){}}
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 
-function joinQuiz(){
+async function joinQuiz(){
   const code=document.getElementById('codeIn').value.trim().toUpperCase();
   const err=document.getElementById('loginErr');
   if(!code||code.length<2){err.textContent='Escribe tu código del Pasaporte';return;}
-  err.textContent=''; myCode=code; roundPts=0;
+  err.textContent='Verificando código…';
+  const btn=document.querySelector('#sLogin .btn');
+  if(btn) btn.disabled=true;
+
+  // Validar código contra el Web App (Sheet de Pasaportes)
+  try{
+    const res = await Promise.race([
+      apiCall({action:'perfil', codigo:code}),
+      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),6000))
+    ]);
+    if(res && res.status==='ok' && res.nombre){
+      myCode = res.codigo || code;  // usar el código del Sheet (evita mayúscula/tilde)
+      myName = res.nombre;
+    } else {
+      // Código no encontrado en el Sheet — permitir entrar pero avisar
+      myCode = code;
+      myName = code;
+      err.textContent = '⚠️ Código no encontrado. Verifica que sea el del Pasaporte. Entrando igual…';
+      await new Promise(r=>setTimeout(r,2000));
+    }
+  } catch(e){
+    // Timeout o error de red — entrar con lo que tiene
+    myCode = code;
+    myName = code;
+    err.textContent = '⚠️ Sin conexión al servidor. Entrando sin validar…';
+    await new Promise(r=>setTimeout(r,1500));
+  }
+
+  err.textContent='';
+  if(btn) btn.disabled=false;
+  roundPts=0;
   document.getElementById('wCode').textContent=myCode;
-  show('sWait');
+
   // ── FIREBASE: escuchar estado en tiempo real ─────────────────────────────
   db.ref('quiz/state').on('value', snap=>{
     const qs = snap.val();
@@ -240,6 +275,7 @@ function joinQuiz(){
       lastPhase='waiting'; roundPts=0; lastQId=null; show('sWait');
     }
   });
+  show('sWait');
 }
 
 function showQuestion(qs){
@@ -271,15 +307,9 @@ function submitAns(idx,qs,btn){
   document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
   btn.classList.add('selected');
   const ts=Date.now();
-  const lb=getLB();
-  if(lb[myCode]){
-    if(!lb[myCode].quizAnswers)lb[myCode].quizAnswers={};
-    lb[myCode].quizAnswers[qs.qId]={ans:idx,ts,correct:idx===qs.correct};
-    saveLB(lb);
-  }
-  // Save to Firebase for real-time leaderboard
+  // Save to Firebase for real-time leaderboard — usar myName validado del Sheet
   db.ref('quiz/answers/'+qs.qId+'/'+myCode).set({
-    codigo:myCode, nombre:lb[myCode]?.name||myCode,
+    codigo:myCode, nombre:myName,
     ans:idx, correct:idx===qs.correct, ts
   });
   document.getElementById('sentMsg').style.display='block';
@@ -287,39 +317,41 @@ function submitAns(idx,qs,btn){
 
 function showResult(qs){
   clearInterval(timerInt);
-  const lb=getLB(); const me=lb[myCode];
-  const myAns=me&&me.quizAnswers&&me.quizAnswers[qs.qId];
-
-  // Count my correct answers so far this round
-  if(!me) { show('sResult'); return; }
-  const myAnswers = me.quizAnswers || {};
-  let myCorrects=0, myTotal=0;
-  Object.values(myAnswers).forEach(a=>{ myTotal++; if(a.correct) myCorrects++; });
-
-  if(myAns&&myAns.correct){
-    document.getElementById('rEmoji').textContent='✅';
-    document.getElementById('rTitle').textContent='¡Respuesta correcta!';
-    document.getElementById('rPts').textContent=myCorrects+' / 5';
-    document.getElementById('rPts').style.color='var(--g-green)';
-    document.getElementById('rSub').textContent='Los puntos se asignan al final de la ronda de 5 preguntas.';
-  } else if(!myAns){
+  // Leer la respuesta que guardamos en Firebase para esta pregunta
+  db.ref('quiz/answers/'+qs.qId+'/'+myCode).once('value').then(snap=>{
+    const myAns = snap.val();
+    if(myAns&&myAns.correct){
+      document.getElementById('rEmoji').textContent='✅';
+      document.getElementById('rTitle').textContent='¡Respuesta correcta!';
+      document.getElementById('rPts').textContent='✓ Correcta';
+      document.getElementById('rPts').style.color='var(--g-green)';
+      document.getElementById('rSub').textContent='Los puntos se asignan al final de la ronda de 5 preguntas.';
+    } else if(!myAns){
+      document.getElementById('rEmoji').textContent='⏱';
+      document.getElementById('rTitle').textContent='Sin respuesta';
+      document.getElementById('rPts').textContent='Tiempo agotado';
+      document.getElementById('rPts').style.color='var(--muted)';
+      document.getElementById('rSub').textContent='La correcta era: '+(qs.options&&qs.options[qs.correct]||'—');
+    } else {
+      document.getElementById('rEmoji').textContent='❌';
+      document.getElementById('rTitle').textContent='Respuesta incorrecta';
+      document.getElementById('rPts').textContent='✗ Incorrecta';
+      document.getElementById('rPts').style.color='var(--muted)';
+      document.getElementById('rSub').textContent='La correcta era: '+(qs.options&&qs.options[qs.correct]||'—');
+    }
+    const rem=5-(qs.qNum||0);
+    document.getElementById('roundTotal').textContent=myAns&&myAns.correct?'✓':'✗';
+    document.getElementById('betweenSub').textContent=rem>0?'Quedan '+rem+' preguntas. ¡Mantente atento!':'¡Última pregunta! Espera el podio final.';
+    show('sResult');
+  }).catch(()=>{
+    // Si no hay datos, mostrar pantalla de resultado igual
     document.getElementById('rEmoji').textContent='⏱';
     document.getElementById('rTitle').textContent='Sin respuesta';
-    document.getElementById('rPts').textContent=myCorrects+' / 5';
+    document.getElementById('rPts').textContent='—';
     document.getElementById('rPts').style.color='var(--muted)';
     document.getElementById('rSub').textContent='La correcta era: '+(qs.options&&qs.options[qs.correct]||'—');
-  } else {
-    document.getElementById('rEmoji').textContent='❌';
-    document.getElementById('rTitle').textContent='Respuesta incorrecta';
-    document.getElementById('rPts').textContent=myCorrects+' / 5';
-    document.getElementById('rPts').style.color='var(--muted)';
-    document.getElementById('rSub').textContent='La correcta era: '+(qs.options&&qs.options[qs.correct]||'—');
-  }
-  const rem=5-(qs.qNum||0);
-  document.getElementById('roundTotal').textContent=myCorrects;
-  const rem2=5-(qs.qNum||0);
-  document.getElementById('betweenSub').textContent=rem2>0?'Quedan '+rem2+' preguntas. ¡Mantente atento!':'¡Última pregunta! Espera el podio final.';
-  show('sResult');
+    show('sResult');
+  });
 }
 
 function showPodium(qs){
@@ -328,12 +360,11 @@ function showPodium(qs){
   (qs.topThree||[]).forEach((p,i)=>{
     const row=document.createElement('div'); row.className='p-row';
     const pts_map=[15,7,5];
-    row.innerHTML='<span class="p-medal">'+medals[i]+'</span><span class="p-name">'+p.name+' <span style="font-size:11px;color:var(--muted)">('+p.corrects+' correctas)</span></span><span class="p-pts">+'+pts_map[i]+' pts</span>';
+    row.innerHTML='<span class="p-medal">'+medals[i]+'</span><span class="p-name">'+(p.nombre||p.name||p.codigo)+'</span><span class="p-pts">+'+pts_map[i]+' pts</span>';
     list.appendChild(row);
   });
-  const lb=getLB();
-  // Check if I won points
-  const myMatch = (qs.topThree||[]).findIndex(p=>p.name===(lb[myCode]?.name));
+  // Verificar si yo gané usando myName validado
+  const myMatch = (qs.topThree||[]).findIndex(p=>(p.nombre||p.name)===myName);
   if(myMatch>=0){
     const myPts=[15,7,5][myMatch];
     document.getElementById('podMyPts').textContent='+'+myPts+' pts 🎉';
@@ -341,6 +372,16 @@ function showPodium(qs){
     document.getElementById('podMyPts').textContent='0 pts esta ronda';
   }
   show('sPodium');
+  // Consultar total real al servidor (después de que el facilitador ya sumó)
+  if(myCode){
+    setTimeout(()=>{
+      apiCall({action:'perfil', codigo:myCode}).then(res=>{
+        const total = res.puntos ?? (res.perfil?.total) ?? '—';
+        const el = document.getElementById('podTotalAcum');
+        if(el) el.textContent = typeof total === 'number' ? total + ' pts' : '—';
+      }).catch(()=>{});
+    }, 2500); // esperar 2.5s para que el servidor ya haya procesado los puntos
+  }
 }
 </script>
 </body>

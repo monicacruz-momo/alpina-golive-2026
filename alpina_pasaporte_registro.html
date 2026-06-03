@@ -207,12 +207,14 @@ async function register(){
 
   try {
     const res = await apiCall({ action:'registrar', nombre:fn, apellido:ln });
-    if(res.ok){
-      // Save locally too for offline fallback
+    if(res.status === 'ok' || res.status === 'ya_registrado'){
+      // Registro exitoso O ya estaba registrado → abrir pasaporte
       try{ localStorage.setItem('alpina_passport_2026', JSON.stringify({name:res.nombre, code:res.codigo})); }catch(e){}
       const lb = getLB();
-      lb[res.codigo] = {name:res.nombre, code:res.codigo, acts:[], pts:0, quizPts:0, ruletaPts:0, quizRoundsPlayed:0, ruletaRoundsPlayed:0};
-      saveLB(lb);
+      if(!lb[res.codigo]){
+        lb[res.codigo] = {name:res.nombre, code:res.codigo, acts:[], pts:0, quizPts:0, ruletaPts:0, quizRoundsPlayed:0, ruletaRoundsPlayed:0};
+        saveLB(lb);
+      }
       showPassport({name:res.nombre, code:res.codigo});
     } else {
       err.textContent = res.mensaje || 'Error al registrar. Intenta de nuevo.';
