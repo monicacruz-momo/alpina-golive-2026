@@ -539,8 +539,9 @@ function closeQ(){
 async function loadResults(){
   if(!currentQId) return;
   try{
+    if(!db) return;
     const snap = await Promise.race([
-      if(db) db.ref('quiz/answers/'+currentQId).once('value'),
+      db.ref('quiz/answers/'+currentQId).once('value'),
       new Promise((_,rej)=>setTimeout(()=>rej('timeout'),4000))
     ]);
     const data = snap.val() || {};
