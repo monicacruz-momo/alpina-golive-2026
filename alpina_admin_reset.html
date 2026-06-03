@@ -82,7 +82,22 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .info-row{display:flex;gap:.6rem;font-size:12px;padding:.4rem .6rem;border-radius:8px;}
 .info-ok{background:rgba(52,168,83,.08);color:#6ee7a0;}
 .info-warn{background:rgba(234,0,43,.08);color:#FCA5A5;}
+
+/* Estado leaderboard */
+.lb-status{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-radius:14px;margin-bottom:.875rem;}
+.lb-open{background:rgba(52,168,83,.12);border:1px solid rgba(52,168,83,.3);}
+.lb-closed{background:rgba(234,0,43,.12);border:1px solid rgba(234,0,43,.3);}
+.lb-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.lb-dot-open{background:var(--green);animation:blink 1.5s ease-in-out infinite;}
+.lb-dot-closed{background:var(--red);}
+.lb-text{flex:1;margin:0 .75rem;font-size:13px;font-weight:600;}
+.lb-text small{display:block;font-size:10px;font-weight:400;opacity:.7;margin-top:2px;}
+.btn-lock{background:linear-gradient(135deg,#7B1FA2,#9C27B0);box-shadow:0 4px 16px rgba(123,31,162,.35);}
+.btn-unlock{background:linear-gradient(135deg,#1a9e4a,#34A853);box-shadow:0 4px 16px rgba(52,168,83,.3);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -109,7 +124,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         <button class="toggle-pw" onclick="togglePw()" title="Mostrar/ocultar">👁</button>
       </div>
       <p class="err-msg" id="claveErr"></p>
-      <button class="btn btn-danger" onclick="verificarClave()">Acceder →</button>
+      <button class="btn btn-danger" onclick="verificarClave()">Acceder al reset →</button>
+      <button class="btn" style="background:linear-gradient(135deg,#7B1FA2,#9C27B0);box-shadow:0 4px 16px rgba(123,31,162,.35);margin-top:.5rem;" onclick="verificarClaveParaLB()">🏆 Cerrar / Abrir Leaderboard →</button>
     </div>
     <div class="card c-blue" style="background:rgba(0,24,71,0.5);">
       <p style="font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:800;margin-bottom:.5rem;">¿Cuándo usar el reset?</p>
@@ -117,6 +133,45 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         <div class="info-row info-ok">✅ Antes del evento real — para partir de cero</div>
         <div class="info-row info-ok">✅ Después de una sesión de prueba</div>
         <div class="info-row info-warn">❌ Nunca durante el evento — borra puntos reales</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANTALLA 0B: Cerrar / Abrir Leaderboard ── -->
+  <div class="screen" id="sCerrarLB">
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:1.5rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#9C27B0,#E4002B);"></div>
+      <div style="font-size:2.5rem;text-align:center;margin-bottom:.5rem;">🏆</div>
+      <p class="card-title">Estado del Leaderboard</p>
+      <p class="card-sub" id="lbStatusDesc">Verificando estado…</p>
+
+      <!-- Indicador de estado -->
+      <div class="lb-status lb-open" id="lbStatusCard">
+        <div class="lb-dot lb-dot-open" id="lbDot"></div>
+        <div class="lb-text">
+          <span id="lbStatusLabel">Abierto — sumando puntos</span>
+          <small id="lbStatusSub">Los jugadores pueden ganar puntos</small>
+        </div>
+      </div>
+
+      <!-- Botón acción -->
+      <button class="btn btn-lock" id="btnToggleLB" onclick="toggleLeaderboard()">
+        🔒 Cerrar Leaderboard definitivamente
+      </button>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:.5rem;line-height:1.5;" id="lbActionHint">
+        Al cerrar, nadie más puede sumar puntos. El ranking queda congelado para la premiación.
+      </p>
+      <button class="btn btn-outline" style="margin-top:.75rem;" onclick="show('sLogin')">← Volver</button>
+    </div>
+
+    <!-- Info contextual -->
+    <div class="card c-blue" style="background:rgba(0,24,71,0.5);">
+      <p style="font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:800;margin-bottom:.5rem;">¿Cómo funciona el cierre?</p>
+      <div class="info-grid">
+        <div class="info-row info-ok">✅ Úsalo a las 2:30pm antes de la premiación</div>
+        <div class="info-row info-ok">✅ El leaderboard sigue visible con los puntos congelados</div>
+        <div class="info-row info-ok">✅ Puedes reabrirlo si lo necesitas</div>
+        <div class="info-row info-warn">❌ No borra ningún dato — solo detiene la suma</div>
       </div>
     </div>
   </div>
@@ -180,6 +235,22 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 const WEB_APP = 'https://script.google.com/macros/s/AKfycbyCLcnW9zebfbmjPiH8-9_JXRDOr53NHC_vmRKR0zkwiRr8cvxj8yrNaFYl2f9ZyzzhMw/exec';
 const CLAVE_CORRECTA = 'alpina2026reset';
 
+// ── Firebase para el flag de leaderboard ─────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBSymU8ZEuwbopsg0Cf-eX2fMU7r1LDbPw",
+  authDomain: "alpina-go-live-2026.firebaseapp.com",
+  databaseURL: "https://alpina-go-live-2026-default-rtdb.firebaseio.com",
+  projectId: "alpina-go-live-2026",
+  storageBucket: "alpina-go-live-2026.firebasestorage.app",
+  messagingSenderId: "664989840156",
+  appId: "1:664989840156:web:c9014078af4ecbbe9680d9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let lbCerrado = false; // estado actual del leaderboard
+
+// ── Utilidades ────────────────────────────────────────────────────────────────
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -201,66 +272,126 @@ function resetearPagina() {
   show('sLogin');
 }
 
+// ── Verificar clave para reset ────────────────────────────────────────────────
 function verificarClave() {
   const clave = document.getElementById('claveIn').value.trim();
   const inp   = document.getElementById('claveIn');
   const err   = document.getElementById('claveErr');
-  
-  if (!clave) {
-    err.textContent = 'Ingresa la clave de administrador';
-    inp.classList.add('error');
-    setTimeout(() => inp.classList.remove('error'), 500);
-    return;
-  }
-  
-  if (clave !== CLAVE_CORRECTA) {
-    err.textContent = 'Clave incorrecta. Intenta de nuevo.';
-    inp.classList.add('error');
-    inp.value = '';
-    setTimeout(() => inp.classList.remove('error'), 500);
-    return;
-  }
-  
+  if (!clave) { err.textContent = 'Ingresa la clave de administrador'; inp.classList.add('error'); setTimeout(()=>inp.classList.remove('error'),500); return; }
+  if (clave !== CLAVE_CORRECTA) { err.textContent = 'Clave incorrecta. Intenta de nuevo.'; inp.classList.add('error'); inp.value=''; setTimeout(()=>inp.classList.remove('error'),500); return; }
   err.textContent = '';
   inp.classList.add('ok');
   setTimeout(() => { inp.classList.remove('ok'); show('sConfirm'); }, 300);
 }
 
+// ── Verificar clave para panel de Leaderboard ─────────────────────────────────
+function verificarClaveParaLB() {
+  const clave = document.getElementById('claveIn').value.trim();
+  const inp   = document.getElementById('claveIn');
+  const err   = document.getElementById('claveErr');
+  if (!clave) { err.textContent = 'Ingresa la clave de administrador'; inp.classList.add('error'); setTimeout(()=>inp.classList.remove('error'),500); return; }
+  if (clave !== CLAVE_CORRECTA) { err.textContent = 'Clave incorrecta. Intenta de nuevo.'; inp.classList.add('error'); inp.value=''; setTimeout(()=>inp.classList.remove('error'),500); return; }
+  err.textContent = '';
+  inp.classList.add('ok');
+  setTimeout(() => { inp.classList.remove('ok'); abrirPanelLB(); }, 300);
+}
+
+// ── Panel de Leaderboard ──────────────────────────────────────────────────────
+function abrirPanelLB() {
+  show('sCerrarLB');
+  document.getElementById('lbStatusDesc').textContent = 'Verificando estado actual…';
+  // Leer estado desde Firebase
+  db.ref('config/leaderboard_cerrado').once('value').then(snap => {
+    lbCerrado = snap.val() === true;
+    actualizarUILeaderboard();
+  }).catch(() => {
+    lbCerrado = false;
+    actualizarUILeaderboard();
+  });
+}
+
+function actualizarUILeaderboard() {
+  const card   = document.getElementById('lbStatusCard');
+  const dot    = document.getElementById('lbDot');
+  const label  = document.getElementById('lbStatusLabel');
+  const sub    = document.getElementById('lbStatusSub');
+  const btn    = document.getElementById('btnToggleLB');
+  const hint   = document.getElementById('lbActionHint');
+  const desc   = document.getElementById('lbStatusDesc');
+
+  if (lbCerrado) {
+    card.className  = 'lb-status lb-closed';
+    dot.className   = 'lb-dot lb-dot-closed';
+    label.textContent = '🔒 Cerrado — ranking congelado';
+    sub.textContent = 'Nadie puede sumar más puntos';
+    desc.textContent  = 'El leaderboard está CERRADO. El ranking está congelado para la premiación.';
+    btn.className   = 'btn btn-unlock';
+    btn.textContent = '🔓 Reabrir Leaderboard';
+    hint.textContent  = 'Si reabrís el leaderboard, los jugadores podrán volver a sumar puntos.';
+  } else {
+    card.className  = 'lb-status lb-open';
+    dot.className   = 'lb-dot lb-dot-open';
+    label.textContent = '🟢 Abierto — sumando puntos';
+    sub.textContent = 'Los jugadores pueden ganar puntos normalmente';
+    desc.textContent  = 'El leaderboard está ABIERTO. Los puntos se suman con normalidad.';
+    btn.className   = 'btn btn-lock';
+    btn.textContent = '🔒 Cerrar Leaderboard definitivamente';
+    hint.textContent  = 'Al cerrar, nadie más puede sumar puntos. El ranking queda congelado para la premiación.';
+  }
+}
+
+async function toggleLeaderboard() {
+  const btn = document.getElementById('btnToggleLB');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando…';
+
+  const nuevoEstado = !lbCerrado;
+  const hora = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+
+  try {
+    await db.ref('config/leaderboard_cerrado').set(nuevoEstado);
+    await db.ref('config/leaderboard_cerrado_ts').set(hora);
+    lbCerrado = nuevoEstado;
+    actualizarUILeaderboard();
+
+    // Notificar también al Web App para que sincronice
+    await fetch(WEB_APP + '?action=set_lb_estado&cerrado=' + nuevoEstado + '&clave=' + encodeURIComponent(CLAVE_CORRECTA));
+  } catch(e) {
+    alert('Error al guardar el estado. Intenta de nuevo.');
+  }
+  btn.disabled = false;
+}
+
+// ── Reset de datos ─────────────────────────────────────────────────────────────
 async function ejecutarReset() {
   show('sLoading');
   try {
     const url = WEB_APP + '?action=reset_datos&clave=' + encodeURIComponent(CLAVE_CORRECTA);
     const resp = await fetch(url);
-    
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    
     const data = await resp.json();
-    
     if (data.ok) {
-      // Mostrar resumen por hoja
+      // También resetear el flag en Firebase
+      await db.ref('config/leaderboard_cerrado').set(false);
       if (data.resumen) {
         const div = document.getElementById('resumenHojas');
         div.innerHTML = Object.entries(data.resumen).map(([hoja, estado]) =>
-          `<div class="result-row">
-            <span>${hoja}</span>
-            <span class="result-val ${estado.includes('vacía')?'empty':'ok'}">${estado}</span>
-          </div>`
+          `<div class="result-row"><span>${hoja}</span><span class="result-val ${estado.includes('vacía')?'empty':'ok'}">${estado}</span></div>`
         ).join('');
       }
       show('sOk');
     } else {
       document.getElementById('errorTitle').textContent = 'Error al resetear';
-      document.getElementById('errorMsg').textContent = data.msg || 'El servidor devolvió un error. Verifica que el Apps Script está actualizado.';
+      document.getElementById('errorMsg').textContent = data.msg || 'El servidor devolvió un error.';
       show('sError');
     }
   } catch(e) {
     document.getElementById('errorTitle').textContent = 'Error de conexión';
-    document.getElementById('errorMsg').textContent = 'No se pudo conectar al Apps Script. Verifica que está implementado correctamente. (' + e.message + ')';
+    document.getElementById('errorMsg').textContent = 'No se pudo conectar al Apps Script. (' + e.message + ')';
     show('sError');
   }
 }
 
-// Enter en el campo de clave
 document.getElementById('claveIn').addEventListener('keydown', e => {
   if (e.key === 'Enter') verificarClave();
 });

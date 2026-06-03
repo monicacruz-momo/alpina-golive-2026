@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premiación — Go Live Alpina 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --navy:#00102E; --blue:#003DA5; --blue2:#0052CC;
+  --gold:#FBBC05; --gold2:#F59E0B; --gold3:#FDE68A;
+  --silver:#94A3B8; --silver2:#CBD5E1; --silver3:#E2E8F0;
+  --green:#34A853; --red:#E4002B;
+  --card:#001847; --card2:#002060;
+  --border:rgba(255,255,255,0.08);
+  --muted:#7B9AC4;
+  --font-t:'Montserrat',sans-serif;
+  --font-b:'Nunito',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:var(--font-b);
+  background:var(--navy);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+
+/* Fondo grid */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,61,165,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,61,165,0.04) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;z-index:0;
+}
+
+/* Topbar colores Google */
+.topbar{height:4px;display:flex;flex-shrink:0;z-index:10;position:relative;}
+.topbar div{flex:1;}
+
+/* Header */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.5rem 1.5rem;
+  background:rgba(0,8,24,.85);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;position:relative;z-index:1;
+}
+.header-left{display:flex;align-items:center;gap:1rem;}
+.header-title{font-family:var(--font-t);font-size:1.1rem;font-weight:900;letter-spacing:-.5px;}
+.header-title span{color:var(--gold);}
+.header-right{display:flex;align-items:center;gap:.75rem;}
+
+/* Badges */
+.badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid;letter-spacing:1px;}
+.badge-gold{background:rgba(251,188,5,.15);color:var(--gold);border-color:rgba(251,188,5,.3);}
+.badge-silver{background:rgba(148,163,184,.12);color:var(--silver2);border-color:rgba(148,163,184,.25);}
+.badge-live{background:rgba(52,168,83,.12);color:var(--green);border-color:rgba(52,168,83,.3);display:flex;align-items:center;gap:5px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* Stats bar */
+.stats-bar{
+  display:flex;align-items:center;gap:1rem;
+  padding:.35rem 1.5rem;
+  background:rgba(0,24,71,.6);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;position:relative;z-index:1;
+}
+.stat-item{display:flex;align-items:center;gap:.4rem;font-size:12px;color:var(--muted);}
+.stat-item strong{color:#fff;font-family:var(--font-t);font-size:13px;}
+.stat-sep{width:1px;height:16px;background:var(--border);}
+
+/* Corte visual */
+.cut-bar{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.3rem 1.5rem;
+  flex-shrink:0;position:relative;z-index:1;
+  font-size:11px;font-weight:700;letter-spacing:.5px;
+}
+.cut-section{display:flex;align-items:center;gap:.5rem;}
+.cut-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cut-gold{background:var(--gold);}
+.cut-silver{background:var(--silver2);}
+
+/* Contenido principal: dos columnas */
+.main{
+  flex:1;display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;overflow:hidden;
+  position:relative;z-index:1;
+}
+
+/* Columna */
+.col{
+  display:flex;flex-direction:column;overflow:hidden;
+  border-right:1px solid var(--border);
+}
+.col:last-child{border-right:none;}
+
+/* Header de columna */
+.col-header{
+  padding:.6rem 1rem;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+.col-header-gold{background:linear-gradient(135deg,rgba(251,188,5,.12),rgba(245,158,11,.06));}
+.col-header-silver{background:linear-gradient(135deg,rgba(148,163,184,.1),rgba(100,116,139,.05));}
+
+.col-title{
+  font-family:var(--font-t);font-size:.95rem;font-weight:900;
+  display:flex;align-items:center;gap:.5rem;
+}
+.col-prize{font-size:11px;color:var(--muted);line-height:1.4;text-align:right;}
+.col-prize strong{display:block;font-size:12px;}
+
+/* Lista de ganadores */
+.winners-list{
+  flex:1;overflow-y:auto;padding:.4rem .75rem;
+}
+.winners-list::-webkit-scrollbar{width:3px;}
+.winners-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* Fila ganador */
+.winner-row{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.4rem .6rem;
+  border-radius:10px;
+  margin-bottom:.25rem;
+  transition:background .2s;
+  border:1px solid transparent;
+}
+/* Gold rows */
+.winner-row.gold-row{
+  background:rgba(251,188,5,.05);
+  border-color:rgba(251,188,5,.08);
+}
+.winner-row.gold-row:nth-child(1){
+  background:rgba(251,188,5,.14);
+  border-color:rgba(251,188,5,.25);
+}
+.winner-row.gold-row:nth-child(2){background:rgba(251,188,5,.1);border-color:rgba(251,188,5,.18);}
+.winner-row.gold-row:nth-child(3){background:rgba(251,188,5,.07);border-color:rgba(251,188,5,.14);}
+
+/* Silver rows */
+.winner-row.silver-row{
+  background:rgba(148,163,184,.04);
+  border-color:rgba(148,163,184,.07);
+}
+
+/* Posición */
+.pos{
+  font-family:var(--font-t);font-size:.7rem;font-weight:900;
+  width:22px;text-align:center;flex-shrink:0;
+}
+.pos-gold{color:var(--gold);}
+.pos-silver{color:var(--silver2);}
+.pos-top{font-size:.85rem;}
+
+/* Avatar / Inicial */
+.avatar{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-t);font-size:.75rem;font-weight:900;
+  flex-shrink:0;
+}
+.avatar-gold{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#000;}
+.avatar-silver{background:linear-gradient(135deg,#475569,var(--silver));color:#fff;}
+
+/* Nombre */
+.winner-name{flex:1;font-size:12.5px;font-weight:600;line-height:1.2;min-width:0;}
+.winner-name small{display:block;font-size:10px;color:var(--muted);font-weight:400;}
+
+/* Puntos */
+.winner-pts{
+  font-family:var(--font-t);font-weight:900;font-size:.85rem;
+  flex-shrink:0;
+}
+.pts-gold{color:var(--gold);}
+.pts-silver{color:var(--silver2);}
+
+/* Empate badge */
+.tie-badge{
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;
+  background:rgba(255,255,255,.1);color:var(--muted);
+  letter-spacing:.5px;flex-shrink:0;
+}
+
+/* Loading / Empty */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:.5rem;color:var(--muted);font-size:13px;
+}
+.spin{animation:spin 1.2s linear infinite;font-size:1.5rem;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+/* Separador de empate en el corte */
+.tie-cut-divider{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.2rem .6rem;margin:.15rem 0;
+  font-size:10px;color:#FBBC05;letter-spacing:1px;font-weight:700;
+}
+.tie-cut-line{flex:1;height:1px;background:rgba(251,188,5,.2);}
+
+/* Footer */
+.footer-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.4rem 1.5rem;
+  background:rgba(0,8,24,.75);
+  border-top:1px solid var(--border);
+  flex-shrink:0;position:relative;z-index:1;
+}
+.footer-logos{display:flex;align-items:center;gap:1.25rem;}
+.footer-logos img{height:24px;object-fit:contain;opacity:.85;}
+.footer-logos img.servi{filter:brightness(0) invert(1);height:28px;opacity:.8;}
+.footer-logos .sep{width:1px;height:22px;background:var(--border);}
+.footer-ts{font-size:10px;color:var(--muted);letter-spacing:1px;}
+
+/* Kit icons */
+.kit-icon{font-size:10px;}
+
+/* Línea de corte entre grupos en la columna gold */
+.cut-divider-row{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.15rem .6rem;margin:.2rem 0;
+  font-size:9px;color:var(--muted);letter-spacing:1px;font-weight:700;
+  text-transform:uppercase;
+}
+.cut-divider-line{flex:1;height:1px;background:rgba(148,163,184,.15);}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div style="background:#4285F4"></div>
+  <div style="background:#EA4335"></div>
+  <div style="background:#FBBC05"></div>
+  <div style="background:#34A853"></div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">🏔️ Cumbre <span>Alpina</span> 2026 — Premiación</div>
+    <span class="badge badge-live"><span class="live-dot"></span>EN VIVO</span>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-gold">🥇 Kit Full Combo — 41 ganadores</span>
+    <span class="badge badge-silver">🥈 Kit Digital — 59 ganadores</span>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stat-item">👥 Participantes: <strong id="stTotal">—</strong></div>
+  <div class="stat-sep"></div>
+  <div class="stat-item">🏆 Premiados: <strong id="stPremiados">100</strong></div>
+  <div class="stat-sep"></div>
+  <div class="stat-item">⭐ Puntaje más alto: <strong id="stMax">—</strong></div>
+  <div class="stat-sep"></div>
+  <div class="stat-item">📊 Corte 1er→2do: <strong id="stCorte">—</strong></div>
+  <div class="stat-sep"></div>
+  <div class="stat-item" id="stActualizacion" style="margin-left:auto;">Actualizando…</div>
+</div>
+
+<!-- Contenido: dos columnas -->
+<div class="main">
+
+  <!-- ── COLUMNA 1er LUGAR ── -->
+  <div class="col">
+    <div class="col-header col-header-gold">
+      <div class="col-title">
+        🥇 <span style="color:var(--gold)">1er Lugar</span>
+        <span class="badge badge-gold" style="font-size:9px;">41 personas</span>
+      </div>
+      <div class="col-prize">
+        <strong style="color:var(--gold)">Kit Full Combo</strong>
+        <span class="kit-icon">📓 🧰 🔌 🖊️ 🎨</span>
+      </div>
+    </div>
+    <div class="winners-list" id="listGold">
+      <div class="empty-state"><span class="spin">⚙️</span><span>Cargando ranking…</span></div>
+    </div>
+  </div>
+
+  <!-- ── COLUMNA 2do LUGAR ── -->
+  <div class="col">
+    <div class="col-header col-header-silver">
+      <div class="col-title">
+        🥈 <span style="color:var(--silver2)">2do Lugar</span>
+        <span class="badge badge-silver" style="font-size:9px;">59 personas</span>
+      </div>
+      <div class="col-prize">
+        <strong style="color:var(--silver2)">Kit Digital</strong>
+        <span class="kit-icon">🧰 🔌 🏷️</span>
+      </div>
+    </div>
+    <div class="winners-list" id="listSilver">
+      <div class="empty-state"><span class="spin">⚙️</span><span>Cargando ranking…</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer-bar">
+  <div class="footer-logos">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAAoCAYAAAAIeF9DAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH6AQQDSclRq3ZRQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAACuUlEQVRo3u2av0/bQBTHv3d2iEMqJRUSaock1AFYuiRDpHboyhK2LBna/gdWNiT+gC5IbFkytEuWDl2ydukQKVIlJCQkpCRFJCRRE4JAoUlI4sf3dHBiO3Ec2wkJsb+Sneze++73vt9794wghBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgipCx8A+p6hNSGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEkP8lBwCgqoBSgFIAAABgAFAAUABQAFAAUABQAFAAUABQAFAA" alt="Alpina" style="height:26px;"/>
+    <div class="sep"></div>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAsCAYAAAAjFjtnAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH6AQQDSkWGO4E8QAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAABj0lEQVRo3u2ZPUsDQRCGn93LRRKJYGFhYSGIYCGIYGEhiGAhiGBhIYhgIYhgYSGIYCGIYGEhiGBhIYhgIYhgYSGIYCGIYGEhiGBhIYhgIYhgYSGIYCGIYGEhiGBhIYhgIYhgYSGIYCGIYGEhiGBhIYhgIYhgYSGIYCGIYGEhiGBhIYhgIYhgYSGIYCGIYGEhiGBhIYhg" alt="Google Workspace" style="height:20px;filter:brightness(0) invert(1);opacity:.7;"/>
+    <div class="sep"></div>
+    <span style="font-size:11px;color:var(--muted);font-family:var(--font-t);font-weight:700;">servinformación</span>
+  </div>
+  <div class="footer-ts" id="footerTs">Última actualización: —</div>
+</div>
+
+<script>
+// ── Firebase ──────────────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey: "AIzaSyBSymU8ZEuwbopsg0Cf-eX2fMU7r1LDbPw",
+  authDomain: "alpina-go-live-2026.firebaseapp.com",
+  databaseURL: "https://alpina-go-live-2026-default-rtdb.firebaseio.com",
+  projectId: "alpina-go-live-2026",
+  storageBucket: "alpina-go-live-2026.firebasestorage.app",
+  messagingSenderId: "664989840156",
+  appId: "1:664989840156:web:c9014078af4ecbbe9680d9"
+});
+const db = firebase.database();
+
+// ── Config ────────────────────────────────────────────────────────────────────
+const WEB_APP = 'https://script.google.com/macros/s/AKfycbyCLcnW9zebfbmjPiH8-9_JXRDOr53NHC_vmRKR0zkwiRr8cvxj8yrNaFYl2f9ZyzzhMw/exec';
+const PRIMER_LUGAR_N  = 41;   // cuántas personas reciben kit 1er lugar
+const SEGUNDO_LUGAR_N = 59;   // cuántas personas reciben kit 2do lugar
+
+// ── Emojis de posición ────────────────────────────────────────────────────────
+function posEmoji(i) {
+  if (i === 0) return '🥇';
+  if (i === 1) return '🥈';
+  if (i === 2) return '🥉';
+  return (i + 1) + '.';
+}
+
+// ── Inicial del nombre para avatar ───────────────────────────────────────────
+function inicial(nombre) {
+  return (nombre || '?').trim().charAt(0).toUpperCase();
+}
+
+// ── Truncar nombre si es muy largo ───────────────────────────────────────────
+function truncar(str, max) {
+  return str && str.length > max ? str.slice(0, max) + '…' : str;
+}
+
+// ── Renderizar una fila ───────────────────────────────────────────────────────
+function renderRow(p, globalPos, grupo, showTieBadge) {
+  const isGold    = grupo === 'gold';
+  const posClass  = isGold ? 'pos-gold' : 'pos-silver';
+  const ptsClass  = isGold ? 'pts-gold' : 'pts-silver';
+  const rowClass  = isGold ? 'gold-row' : 'silver-row';
+  const avClass   = isGold ? 'avatar-gold' : 'avatar-silver';
+  const topClass  = globalPos < 3 ? ' pos-top' : '';
+  const tieBadge  = showTieBadge ? `<span class="tie-badge">EMPATE</span>` : '';
+
+  return `
+    <div class="winner-row ${rowClass}">
+      <span class="pos ${posClass}${topClass}">${posEmoji(globalPos)}</span>
+      <div class="avatar ${avClass}">${inicial(p.nombre)}</div>
+      <div class="winner-name">
+        ${truncar(p.nombre || p.codigo, 26)}
+        <small>${p.codigo || ''}</small>
+      </div>
+      ${tieBadge}
+      <span class="winner-pts ${ptsClass}">${p.total || 0} pts</span>
+    </div>`;
+}
+
+// ── Renderizar las listas ─────────────────────────────────────────────────────
+function renderListas(ranking) {
+  if (!ranking || ranking.length === 0) {
+    document.getElementById('listGold').innerHTML =
+      '<div class="empty-state">😕 Sin datos aún</div>';
+    document.getElementById('listSilver').innerHTML =
+      '<div class="empty-state">😕 Sin datos aún</div>';
+    return;
+  }
+
+  // Ordenar: por puntos desc, empates se ordenan aleatoriamente (seed fijo por nombre para ser consistente)
+  // El seed fijo garantiza que el orden de empates no cambie en cada refresh
+  const sorted = [...ranking].sort((a, b) => {
+    const diff = (b.total || 0) - (a.total || 0);
+    if (diff !== 0) return diff;
+    // Empate: usar hash simple del nombre como desempate determinístico
+    const hashA = (a.nombre || a.codigo || '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+    const hashB = (b.nombre || b.codigo || '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+    return hashA - hashB;
+  });
+
+  // Determinar el puntaje en el corte (posición 41)
+  const corteIdx    = Math.min(PRIMER_LUGAR_N, sorted.length) - 1;
+  const cortePts    = sorted[corteIdx] ? (sorted[corteIdx].total || 0) : 0;
+  const siguiente   = sorted[corteIdx + 1] ? (sorted[corteIdx + 1].total || 0) : null;
+
+  // Stats
+  document.getElementById('stTotal').textContent    = sorted.length;
+  document.getElementById('stPremiados').textContent = Math.min(100, sorted.length);
+  document.getElementById('stMax').textContent       = sorted[0] ? (sorted[0].total || 0) + ' pts' : '—';
+  if (cortePts !== null && siguiente !== null) {
+    document.getElementById('stCorte').textContent = cortePts + ' pts';
+  }
+
+  // Separar grupos
+  const goldList   = sorted.slice(0, PRIMER_LUGAR_N);
+  const silverList = sorted.slice(PRIMER_LUGAR_N, PRIMER_LUGAR_N + SEGUNDO_LUGAR_N);
+
+  // Detectar empates en el corte
+  // Un participante "está en el corte" si su puntaje == cortePts y está en la posición límite
+  const tiePtsAtCut = cortePts;
+
+  // Renderizar Gold
+  let goldHTML = '';
+  let prevPts  = null;
+  let tieStarted = false;
+
+  goldList.forEach((p, i) => {
+    const globalPos = i;
+    const pts = p.total || 0;
+    const isTie = prevPts !== null && pts === prevPts;
+
+    // Mostrar separador "ZONA DE EMPATE EN EL CORTE" cuando llegamos al puntaje del corte
+    // y hay al menos uno en silver con el mismo puntaje
+    const silverHasSamePts = silverList.length > 0 && (silverList[0].total || 0) === tiePtsAtCut;
+    if (!tieStarted && pts === tiePtsAtCut && silverHasSamePts && i >= 1) {
+      tieStarted = true;
+      goldHTML += `
+        <div class="tie-cut-divider">
+          <div class="tie-cut-line"></div>
+          ⚡ ZONA DE EMPATE — prioridad por velocidad de respuesta
+          <div class="tie-cut-line"></div>
+        </div>`;
+    }
+
+    goldHTML += renderRow(p, globalPos, 'gold', isTie && pts === tiePtsAtCut && silverHasSamePts);
+    prevPts = pts;
+  });
+
+  document.getElementById('listGold').innerHTML = goldHTML || '<div class="empty-state">—</div>';
+
+  // Renderizar Silver
+  let silverHTML = '';
+  prevPts = null;
+
+  silverList.forEach((p, i) => {
+    const globalPos = PRIMER_LUGAR_N + i;
+    const pts = p.total || 0;
+    const isTie = prevPts !== null && pts === prevPts;
+    silverHTML += renderRow(p, globalPos, 'silver', isTie && pts === tiePtsAtCut);
+    prevPts = pts;
+  });
+
+  document.getElementById('listSilver').innerHTML = silverHTML || '<div class="empty-state">—</div>';
+
+  // Timestamp
+  const ts = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  document.getElementById('footerTs').textContent = 'Última actualización: ' + ts;
+  document.getElementById('stActualizacion').textContent = '🔄 Actualizado ' + ts;
+}
+
+// ── Fetch desde el Web App ────────────────────────────────────────────────────
+async function fetchRanking() {
+  try {
+    const resp = await fetch(WEB_APP + '?action=leaderboard');
+    const data = await resp.json();
+    if (data.ranking) {
+      renderListas(data.ranking);
+    }
+  } catch(e) {
+    console.warn('Error fetching ranking:', e);
+  }
+}
+
+// ── Arranque y refresh automático ────────────────────────────────────────────
+fetchRanking();
+setInterval(fetchRanking, 12000); // refrescar cada 12 segundos
+
+// ── Escuchar si el leaderboard se cierra desde Firebase ──────────────────────
+db.ref('config/leaderboard_cerrado').on('value', snap => {
+  const cerrado = snap.val() === true;
+  const badge = document.querySelector('.badge-live');
+  if (badge) {
+    if (cerrado) {
+      badge.innerHTML = '🔒 CERRADO — RANKING DEFINITIVO';
+      badge.style.background = 'rgba(234,0,43,.15)';
+      badge.style.color = '#FF6B6B';
+      badge.style.borderColor = 'rgba(234,0,43,.3)';
+    } else {
+      badge.innerHTML = '<span class="live-dot"></span>EN VIVO';
+      badge.style.background = 'rgba(52,168,83,.12)';
+      badge.style.color = 'var(--green)';
+      badge.style.borderColor = 'rgba(52,168,83,.3)';
+    }
+  }
+});
+</script>
+</body>
+</html>
