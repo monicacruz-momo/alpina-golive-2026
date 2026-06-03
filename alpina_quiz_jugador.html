@@ -166,17 +166,16 @@ body::before{content:'';position:fixed;inset:0;
 
   <!-- PODIUM -->
   <div class="screen" id="sPodium">
-    <p style="font-family:var(--font-t);font-size:1.3rem;font-weight:800;text-align:center;">🏆 Fin de la ronda</p>
-    <div id="podiumList" style="display:flex;flex-direction:column;gap:8px;"></div>
-    <div class="between-card">
-      <p class="between-title">Tus puntos totales del Quiz</p>
-      <div style="font-family:var(--font-t);font-size:2rem;font-weight:800;color:var(--g-blue);margin:.4rem 0" id="podMyPts">0</div>
-      <p style="font-size:12px;color:var(--muted);">Espera la próxima ronda.</p>
-      <div style="margin-top:.75rem;background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);border-radius:12px;padding:.65rem 1rem;text-align:center;">
-        <p style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.2rem;">TU TOTAL LEADERBOARD</p>
-        <div style="font-family:var(--font-t);font-size:1.6rem;font-weight:900;color:var(--g-yellow);" id="podTotalAcum">—</div>
-        <p style="font-size:10px;color:var(--muted);margin-top:.2rem;">pts acumulados en todos los juegos</p>
+    <div style="text-align:center;padding:1.5rem 0;">
+      <div style="font-size:3rem;margin-bottom:.75rem;">🏔️</div>
+      <p style="font-family:var(--font-t);font-size:1.3rem;font-weight:900;margin-bottom:.4rem;">¡Ronda finalizada!</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem;">Los ganadores se revelan en la pantalla principal.</p>
+      <div style="background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.15);border-radius:16px;padding:1rem 1.25rem;">
+        <p style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem;">TUS PUNTOS TOTALES</p>
+        <div style="font-family:var(--font-t);font-size:2.2rem;font-weight:900;color:var(--g-yellow);" id="podTotalAcum">—</div>
+        <p style="font-size:11px;color:var(--muted);margin-top:.3rem;">en el Leaderboard Cumbre Alpina</p>
       </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:1.25rem;">⏳ Espera la siguiente ronda…</p>
     </div>
   </div>
 </div>
@@ -366,24 +365,8 @@ function showResult(qs){
 }
 
 function showPodium(qs){
-  const medals=['🥇','🥈','🥉'];
-  const list=document.getElementById('podiumList'); list.innerHTML='';
-  (qs.topThree||[]).forEach((p,i)=>{
-    const row=document.createElement('div'); row.className='p-row';
-    const pts_map=[15,7,5];
-    row.innerHTML='<span class="p-medal">'+medals[i]+'</span><span class="p-name">'+(p.nombre||p.name||p.codigo)+'</span><span class="p-pts">+'+pts_map[i]+' pts</span>';
-    list.appendChild(row);
-  });
-  // Verificar si yo gané usando myName validado
-  const myMatch = (qs.topThree||[]).findIndex(p=>(p.nombre||p.name)===myName);
-  if(myMatch>=0){
-    const myPts=[15,7,5][myMatch];
-    document.getElementById('podMyPts').textContent='+'+myPts+' pts 🎉';
-  } else {
-    document.getElementById('podMyPts').textContent='0 pts esta ronda';
-  }
   show('sPodium');
-  // Consultar total real al servidor (después de que el facilitador ya sumó)
+  // Consultar total real al servidor (2.5s para que el facilitador ya haya sumado)
   if(myCode){
     setTimeout(()=>{
       apiCall({action:'perfil', codigo:myCode}).then(res=>{
@@ -391,7 +374,7 @@ function showPodium(qs){
         const el = document.getElementById('podTotalAcum');
         if(el) el.textContent = typeof total === 'number' ? total + ' pts' : '—';
       }).catch(()=>{});
-    }, 2500); // esperar 2.5s para que el servidor ya haya procesado los puntos
+    }, 2500);
   }
 }
 </script>
