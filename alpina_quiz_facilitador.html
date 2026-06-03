@@ -617,16 +617,20 @@ function endRound(){
   // Enviar puntos acumulados de toda la ronda al Sheet (una sola vez por ronda)
   const winners = Object.entries(roundWinners);
   if(winners.length > 0){
-    let sent = 0;
-    winners.forEach(([codigo, w]) => {
-      sumarSheet(codigo, 'quiz_ronda_' + roundNum, w.pts).then(()=>{
-        sent++;
-        if(sent === winners.length){
-          setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada · puntos enviados ✓');
-          log('Puntos ronda ' + roundNum + ' enviados: ' + winners.map(([c,w])=>c+' +'+w.pts+'pts').join(', '));
+    Promise.all(winners.map(([codigo, w]) => sumarSheet(codigo, 'quiz_ronda_' + roundNum, w.pts)))
+      .then(results => {
+        const ok  = results.filter(r=>r&&r.ok).length;
+        const err = results.filter(r=>r&&!r.ok).length;
+        if(err > 0){
+          setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada · ' + ok + ' OK · ' + err + ' errores');
+        } else {
+          setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada · puntos guardados ✓');
         }
+        log('Ronda ' + roundNum + ' · ' + results.map((r,i)=>{
+          const [cod,w] = winners[i];
+          return r&&r.ok ? cod+' +'+w.pts+'pts ✅' : cod+' ERROR: '+(r&&r.msg||'sin respuesta');
+        }).join(' | '));
       });
-    });
   } else {
     setBanner('closed', '⬛ Ronda ' + roundNum + ' finalizada · sin ganadores');
     log('Ronda ' + roundNum + ' finalizada — sin ganadores para sumar');
@@ -715,13 +719,10 @@ async function sumarSheet(codigo, actividad, pts){
     const url = WEB_APP+'?action=sumar_puntos&codigo='+encodeURIComponent(codigo)+'&actividad='+encodeURIComponent(actividad)+'&puntosExtra='+pts;
     const resp = await fetch(url);
     const data = await resp.json();
-    if(data.ok){
-      log('✅ Puntos enviados: ' + codigo + ' +' + pts + 'pts → ' + (data.nombre||''));
-    } else {
-      log('❌ Error puntos ' + codigo + ': ' + (data.msg || data.mensaje || JSON.stringify(data)));
-    }
+    return data; // devolver resultado para que endRound pueda verificar
   }catch(e){
-    log('❌ Error red sumarSheet: ' + e.message);
+    log('❌ Error red: ' + e.message);
+    return { ok: false, msg: e.message };
   }
 }
 
