@@ -712,8 +712,17 @@ function renderRanking(){
 // ── GUARDAR PUNTOS EN SHEET ───────────────────────────────────────────────
 async function sumarSheet(codigo, actividad, pts){
   try{
-    await fetch(WEB_APP+'?action=sumar_puntos&codigo='+encodeURIComponent(codigo)+'&actividad='+encodeURIComponent(actividad)+'&puntosExtra='+pts);
-  }catch(e){ /* silencioso */ }
+    const url = WEB_APP+'?action=sumar_puntos&codigo='+encodeURIComponent(codigo)+'&actividad='+encodeURIComponent(actividad)+'&puntosExtra='+pts;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if(data.ok){
+      log('✅ Puntos enviados: ' + codigo + ' +' + pts + 'pts → ' + (data.nombre||''));
+    } else {
+      log('❌ Error puntos ' + codigo + ': ' + (data.msg || data.mensaje || JSON.stringify(data)));
+    }
+  }catch(e){
+    log('❌ Error red sumarSheet: ' + e.message);
+  }
 }
 
 // ── ARRANQUE ──────────────────────────────────────────────────────────────
