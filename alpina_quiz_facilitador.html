@@ -242,8 +242,13 @@ const firebaseConfig = {
   messagingSenderId:"664989840156",
   appId:"1:664989840156:web:c9014078af4ecbbe9680d9"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+let db;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+} catch(e) {
+  console.error('Firebase init error:', e.message);
+}
 
 // ── Web App ───────────────────────────────────────────────────────────────
 const WEB_APP = 'https://script.google.com/macros/s/AKfycbyCLcnW9zebfbmjPiH8-9_JXRDOr53NHC_vmRKR0zkwiRr8cvxj8yrNaFYl2f9ZyzzhMw/exec';
@@ -361,11 +366,6 @@ const QUESTIONS=[
    correct:2,tool:"Workspace",level:"intermedio"},
 ];
 
-// Verificar distribución
-const dist = {0:0,1:0,2:0,3:0};
-NUEVAS_QUIZ.forEach(q => dist[q.correct
-];
-
 // ── Estado global ─────────────────────────────────────────────────────────
 let phase         = 'idle';      // idle | question | closed
 let currentQ      = 0;           // índice 0-4
@@ -409,8 +409,10 @@ function init(){
   setBanner('wait', '⏸ Listo para lanzar');
   setBtn('launch', true); setBtn('close', false); setBtn('next', false); setBtn('end', false);
   // Limpiar Firebase state y jugadores de sesión anterior
-  db.ref('quiz/state').set({phase:'waiting', roundNum});
-  db.ref('quiz/answers').remove();   // limpiar respuestas anteriores
+  if(db){
+    if(db) db.ref('quiz/state').set({phase:'waiting', roundNum});
+    if(db) db.ref('quiz/answers').remove();
+  }
   log('Ronda ' + roundNum + ' lista · ' + roundQs.length + ' preguntas');
   // Iniciar feed de conteo de jugadores
   clearInterval(feedInt);
@@ -484,9 +486,13 @@ function launchQ(){
     timeLimit: 40,
     roundNum : roundNum
   };
-  db.ref('quiz/state').set(state)
-    .then(()=> log('▶ Pregunta ' + (currentQ+1) + '/5 enviada a Firebase'))
-    .catch(e=> log('Error Firebase: ' + e.message));
+  if(db){
+    db.ref('quiz/state').set(state)
+      .then(()=> log('▶ Pregunta ' + (currentQ+1) + '/5 enviada a Firebase'))
+      .catch(e=> log('Error Firebase: ' + e.message));
+  } else {
+    log('▶ Pregunta ' + (currentQ+1) + '/5 cargada (sin Firebase)');
+  }
 
   setBanner('active', '▶ Pregunta ' + (currentQ+1) + '/5 activa');
   setBtn('launch', false); setBtn('close', true); setBtn('next', false); setBtn('end', false);
@@ -521,7 +527,7 @@ function closeQ(){
   revelarCorrecta(roundQs[currentQ].correct);
 
   // 4. Notificar a jugadores que cerró
-  db.ref('quiz/state').update({phase:'result', qId: currentQId})
+  if(db) db.ref('quiz/state').update({phase:'result', qId: currentQId})
     .catch(e=> log('Firebase update error: ' + e.message));
 
   log('■ Pregunta ' + (currentQ+1) + ' cerrada');
@@ -534,7 +540,7 @@ async function loadResults(){
   if(!currentQId) return;
   try{
     const snap = await Promise.race([
-      db.ref('quiz/answers/'+currentQId).once('value'),
+      if(db) db.ref('quiz/answers/'+currentQId).once('value'),
       new Promise((_,rej)=>setTimeout(()=>rej('timeout'),4000))
     ]);
     const data = snap.val() || {};
@@ -588,7 +594,7 @@ function nextQ(){
   setBtn('launch', true); setBtn('close', false); setBtn('next', false); setBtn('end', false);
   document.getElementById('timerVal').textContent = '40';
   document.getElementById('timerVal').className = 'timer-val';
-  db.ref('quiz/state').set({phase:'waiting', roundNum});
+  if(db) db.ref('quiz/state').set({phase:'waiting', roundNum});
 }
 
 // ── FIN DE RONDA ──────────────────────────────────────────────────────────
@@ -603,7 +609,7 @@ function endRound(){
     .slice(0,3)
     .map(([codigo, w])=>({ nombre: w.nombre, codigo, pts: w.pts }));
 
-  db.ref('quiz/state').set({phase:'podium', roundNum, topThree});
+  if(db) db.ref('quiz/state').set({phase:'podium', roundNum, topThree});
   renderRanking();
   switchTab('ranking');
 
@@ -657,7 +663,7 @@ function startTimer(secs){
 function updateFeed(){
   // Contar jugadores que han respondido en la pregunta activa
   if(phase==='question' && currentQId){
-    db.ref('quiz/answers/'+currentQId).once('value').then(snap=>{
+    if(db) db.ref('quiz/answers/'+currentQId).once('value').then(snap=>{
       const data = snap.val()||{};
       const answers = Object.values(data);
       document.getElementById('sTotal').textContent   = answers.length;
@@ -666,7 +672,7 @@ function updateFeed(){
     }).catch(()=>{});
   }
   // Contar jugadores registrados
-  db.ref('quiz/players').on('value', snap=>{
+  if(db) db.ref('quiz/players').on('value', snap=>{
     const n = snap.val() ? Object.keys(snap.val()).length : 0;
     document.getElementById('playerBadge').textContent = n + ' jugador' + (n===1?'':'es');
   });
@@ -686,7 +692,7 @@ function renderBanco(){
 // ── RENDER RANKING ────────────────────────────────────────────────────────
 function renderRanking(){
   // Lee el ranking desde Firebase quiz/scores
-  db.ref('quiz/scores').once('value').then(snap=>{
+  if(db) db.ref('quiz/scores').once('value').then(snap=>{
     const data = snap.val()||{};
     const players = Object.values(data).sort((a,b)=>(b.pts||0)-(a.pts||0));
     const medals = ['🥇','🥈','🥉'];
