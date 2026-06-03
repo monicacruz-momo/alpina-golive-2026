@@ -102,6 +102,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .lf-sep{width:1px;height:28px;background:rgba(255,255,255,0.15);flex-shrink:0;}
 
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 <body>
 <div class="topbar">
@@ -258,9 +260,40 @@ function seedDemo(){
 
 seedDemo();
 render();
-setInterval(fetchFromSheet, 10000); // refresh every 10s
-setTimeout(fetchFromSheet, 500);
-setInterval(fetchFromSheet,15000);
+setTimeout(fetchFromSheet, 500);      // carga inicial rápida
+setInterval(fetchFromSheet, 12000);   // refresh cada 12 segundos
+
+// Firebase — escuchar cierre de leaderboard
+firebase.initializeApp({
+  apiKey: "AIzaSyBSymU8ZEuwbopsg0Cf-eX2fMU7r1LDbPw",
+  authDomain: "alpina-go-live-2026.firebaseapp.com",
+  databaseURL: "https://alpina-go-live-2026-default-rtdb.firebaseio.com",
+  projectId: "alpina-go-live-2026"
+});
+firebase.database().ref('config/leaderboard_cerrado').on('value', snap => {
+  const cerrado = snap.val() === true;
+  const title = document.querySelector('.lb-title') || document.querySelector('h1') || document.querySelector('.title');
+  // Buscar o crear badge de estado
+  let badge = document.getElementById('lb-estado-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'lb-estado-badge';
+    badge.style.cssText = 'text-align:center;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;margin:4px auto;display:inline-block;letter-spacing:1px;';
+    const header = document.querySelector('.lb-header') || document.querySelector('header') || document.body.firstElementChild;
+    if (header) header.appendChild(badge);
+  }
+  if (cerrado) {
+    badge.textContent = '🔒 LEADERBOARD CERRADO — RANKING DEFINITIVO';
+    badge.style.background = 'rgba(228,0,43,.15)';
+    badge.style.color = '#FF6B6B';
+    badge.style.border = '1px solid rgba(228,0,43,.3)';
+  } else {
+    badge.textContent = '🟢 EN VIVO';
+    badge.style.background = 'rgba(52,168,83,.15)';
+    badge.style.color = '#34A853';
+    badge.style.border = '1px solid rgba(52,168,83,.3)';
+  }
+});
 
 // ═══════════════════════════════════════════════════════
 // CONEXIÓN AL GOOGLE SHEET — Go Live Alpina 2026
