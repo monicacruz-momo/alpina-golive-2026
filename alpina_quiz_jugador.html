@@ -320,7 +320,8 @@ function submitAns(idx,qs,btn){
   // Save to Firebase for real-time leaderboard — usar myName validado del Sheet
   db.ref('quiz/answers/'+qs.qId+'/'+myCode).set({
     codigo:myCode, nombre:myName,
-    ans:idx, correct:idx===qs.correct, ts
+    ans:idx, correct:idx===qs.correct,
+    ts: firebase.database.ServerValue.TIMESTAMP
   });
   document.getElementById('sentMsg').style.display='block';
 }
