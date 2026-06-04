@@ -729,6 +729,7 @@ function renderRanking(){
 async function sumarSheet(codigo, actividad, pts){
   try{
     const url = WEB_APP+'?action=sumar_puntos&codigo='+encodeURIComponent(codigo)+'&actividad='+encodeURIComponent(actividad)+'&puntosExtra='+pts;
+    console.log(url); // validar parametros
     const resp = await fetch(url);
     const data = await resp.json();
     return data; // devolver resultado para que endRound pueda verificar
