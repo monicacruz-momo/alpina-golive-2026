@@ -582,7 +582,7 @@ async function loadResults(){
       const ptsPregunta = PTS[i]||0;
       if(!roundWinners[cod]) roundWinners[cod] = {nombre: p.nombre||cod, pts: 0};
       // Solo actualizar si este puntaje es MAYOR que el mejor previo
-      roundWinners[cod].pts += ptsPregunta;
+      if(ptsPregunta > roundWinners[cod].pts ) roundWinners[cod].pts = ptsPregunta;
     });
 
     log('Resultados: ' + correct.length + '/' + answers.length + ' correctas · acum. ' + Object.keys(roundWinners).length + ' ganadores');
