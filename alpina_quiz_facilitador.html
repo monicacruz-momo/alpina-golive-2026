@@ -574,19 +574,14 @@ async function loadResults(){
     } else {
       podium.innerHTML = '<p style="font-size:12px;color:var(--muted);text-align:center;padding:.5rem;">Nadie respondió correctamente</p>';
     }
+
     // Acumular ganadores: guardar el MEJOR puntaje obtenido en la ronda
     // (máximo 15 pts = 1er lugar en cualquier pregunta)
     correct.slice(0,3).forEach((p,i)=>{
       const cod = p.codigo;
-      const ptsPregunta = PTS[i] || 0;
-
-      if(!roundWinners[cod]) {
-        roundWinners[cod] = {
-          nombre: p.nombre || cod,
-          pts: 0
-        };
-      }
-
+      const ptsPregunta = PTS[i]||0;
+      if(!roundWinners[cod]) roundWinners[cod] = {nombre: p.nombre||cod, pts: 0};
+      // Solo actualizar si este puntaje es MAYOR que el mejor previo
       roundWinners[cod].pts += ptsPregunta;
     });
 
