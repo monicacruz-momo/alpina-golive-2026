@@ -579,10 +579,16 @@ async function loadResults(){
     // (máximo 15 pts = 1er lugar en cualquier pregunta)
     correct.slice(0,3).forEach((p,i)=>{
       const cod = p.codigo;
-      const ptsPregunta = PTS[i]||0;
-      if(!roundWinners[cod]) roundWinners[cod] = {nombre: p.nombre||cod, pts: 0};
-      // Solo actualizar si este puntaje es MAYOR que el mejor previo
-      if(ptsPregunta > roundWinners[cod].pts) roundWinners[cod].pts = ptsPregunta;
+      const ptsPregunta = PTS[i] || 0;
+
+      if(!roundWinners[cod]) {
+        roundWinners[cod] = {
+          nombre: p.nombre || cod,
+          pts: 0
+        };
+      }
+
+      roundWinners[cod].pts += ptsPregunta;
     });
 
     log('Resultados: ' + correct.length + '/' + answers.length + ' correctas · acum. ' + Object.keys(roundWinners).length + ' ganadores');
