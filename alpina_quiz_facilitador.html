@@ -617,6 +617,7 @@ function endRound(){
     .map(([codigo, w])=>({ nombre: w.nombre, codigo, pts: w.pts }));
 
   if(db) db.ref('quiz/state').set({phase:'podium', roundNum, topThree});
+  console.log('ROUND WINNERS', roundWinners);
   renderRanking();
   switchTab('ranking');
 
