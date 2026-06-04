@@ -532,17 +532,20 @@ function closeQ(){
 
   log('■ Pregunta ' + (currentQ+1) + ' cerrada');
 
-  // 5. Leer resultados en segundo plano (no bloquea la UI)
-  loadResults();
+  // 5. Esperar 1.5s para que todas las respuestas lleguen a Firebase antes de leer
+  setTimeout(loadResults, 1500);
 }
 
 async function loadResults(){
   if(!currentQId) return;
+  // Capturar el qId en este momento para evitar que cambie si el facilitador
+  // avanza a la siguiente pregunta mientras se espera la respuesta de Firebase
+  const qIdSnapshot = currentQId;
   try{
     if(!db) return;
     const snap = await Promise.race([
-      db.ref('quiz/answers/'+currentQId).once('value'),
-      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),4000))
+      db.ref('quiz/answers/'+qIdSnapshot).once('value'),
+      new Promise((_,rej)=>setTimeout(()=>rej('timeout'),6000))
     ]);
     const data = snap.val() || {};
     const answers = Object.values(data).sort((a,b)=>a.ts-b.ts);
