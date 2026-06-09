@@ -127,10 +127,7 @@ body::before{
 .winners-list::-webkit-scrollbar{width:3px;}
 .winners-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
-/* Grid de kit menor */
-#listKit .winner-row{margin-bottom:.2rem;}
-#listKit::-webkit-scrollbar{width:3px;}
-#listKit::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
 
 /* Fila ganador */
 .winner-row{
@@ -227,8 +224,7 @@ body::before{
 .footer-logos .sep{width:1px;height:22px;background:var(--border);}
 .footer-ts{font-size:10px;color:var(--muted);letter-spacing:1px;}
 
-/* Kit icons */
-.kit-icon{font-size:10px;}
+
 
 /* Línea de corte entre grupos en la columna gold */
 .cut-divider-row{
@@ -257,20 +253,17 @@ body::before{
     <span class="badge badge-live"><span class="live-dot"></span>EN VIVO</span>
   </div>
   <div class="header-right">
-    <span class="badge badge-gold">🥇 Top 5 — Premio Sorpresa</span>
-    <span class="badge badge-silver">🎁 Lugares 6–15 — Kit de elementos</span>
+    <span class="badge badge-gold">🏆 15 Ganadores</span>
   </div>
 </div>
 
 <!-- Stats bar -->
 <div class="stats-bar">
-  <div class="stat-item">👥 Participantes: <strong id="stTotal">—</strong></div>
-  <div class="stat-sep"></div>
-  <div class="stat-item">🏆 Premiados: <strong id="stPremiados">15</strong></div>
+  <div class="stat-item">🏆 Ganadores: <strong id="stPremiados">15</strong></div>
   <div class="stat-sep"></div>
   <div class="stat-item">⭐ Puntaje más alto: <strong id="stMax">—</strong></div>
   <div class="stat-sep"></div>
-  <div class="stat-item">📊 Corte top5→kit: <strong id="stCorte">—</strong></div>
+  <div class="stat-item">📊 Puntaje #15: <strong id="stCorte">—</strong></div>
   <div class="stat-sep"></div>
   <div class="stat-item" id="stActualizacion" style="margin-left:auto;">Actualizando…</div>
 </div>
@@ -278,35 +271,16 @@ body::before{
 <!-- Contenido: dos columnas -->
 <div class="main">
 
-  <!-- ── SECCIÓN TOP 5 — PREMIO SORPRESA ── -->
-  <div style="flex-shrink:0;border-bottom:1px solid var(--border);">
-    <div class="col-header col-header-gold" style="padding:.5rem 1.5rem;">
-      <div class="col-title" style="font-size:1.05rem;">
-        🏆 <span style="color:var(--gold)">Top 5 — Premio Sorpresa</span>
-        <span class="badge badge-gold" style="font-size:9px;">5 ganadores</span>
-      </div>
-      <div class="col-prize">
-        <strong style="color:var(--gold)">🎁 Premio Sorpresa</strong>
-      </div>
-    </div>
-    <div id="listTop5" style="display:flex;flex-direction:row;gap:.5rem;padding:.6rem 1.5rem;overflow-x:auto;">
-      <div class="empty-state"><span class="spin">⚙️</span><span>Cargando…</span></div>
-    </div>
-  </div>
-
-  <!-- ── SECCIÓN LUGARES 6–15 — KIT MENOR ── -->
+  <!-- ── LISTA ÚNICA DE 15 GANADORES ── -->
   <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
-    <div class="col-header col-header-silver" style="padding:.5rem 1.5rem;flex-shrink:0;">
+    <div class="col-header col-header-gold" style="padding:.6rem 1.5rem;flex-shrink:0;">
       <div class="col-title" style="font-size:1.05rem;">
-        🎁 <span style="color:var(--silver2)">Lugares 6 al 15 — Kit de elementos</span>
-        <span class="badge badge-silver" style="font-size:9px;">10 ganadores</span>
-      </div>
-      <div class="col-prize">
-        <strong style="color:var(--silver2)">Kit de elementos</strong>
+        🏆 <span style="color:var(--gold)">Ranking de Ganadores</span>
+        <span class="badge badge-gold" style="font-size:9px;">Top 15</span>
       </div>
     </div>
-    <div id="listKit" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:.25rem;padding:.5rem 1.5rem;align-content:start;">
-      <div class="empty-state" style="grid-column:1/-1;"><span class="spin">⚙️</span><span>Cargando…</span></div>
+    <div id="listGanadores" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:.25rem;padding:.75rem 1.5rem;align-content:start;">
+      <div class="empty-state" style="grid-column:1/-1;"><span class="spin">⚙️</span><span>Cargando ranking…</span></div>
     </div>
   </div>
 
@@ -339,8 +313,7 @@ const db = firebase.database();
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const WEB_APP = 'https://script.google.com/macros/s/AKfycbyCLcnW9zebfbmjPiH8-9_JXRDOr53NHC_vmRKR0zkwiRr8cvxj8yrNaFYl2f9ZyzzhMw/exec';
-const TOP_SORPRESA_N  = 5;    // top 5 → premio sorpresa
-const KIT_MENOR_N     = 10;   // posiciones 6-16 → kit menor (6 al 15)
+const TOTAL_GANADORES = 15;   // 15 ganadores en total
 
 // ── Emojis de posición ────────────────────────────────────────────────────────
 function posEmoji(i) {
@@ -383,15 +356,16 @@ function renderRow(p, globalPos, grupo, showTieBadge) {
     </div>`;
 }
 
-// ── Renderizar las listas ─────────────────────────────────────────────────────
+// ── Renderizar lista única de 15 ganadores ───────────────────────────────────
 function renderListas(ranking) {
+  const lista = document.getElementById('listGanadores');
+
   if (!ranking || ranking.length === 0) {
-    document.getElementById('listTop5').innerHTML = '<div class="empty-state">😕 Sin datos aún</div>';
-    document.getElementById('listKit').innerHTML  = '<div class="empty-state">😕 Sin datos aún</div>';
+    lista.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">😕 Sin datos aún</div>';
     return;
   }
 
-  // Ordenar por puntos desc, empates con hash determinístico del nombre
+  // Ordenar por puntos desc, desempate determinístico por nombre
   const sorted = [...ranking].sort((a, b) => {
     const diff = (b.total || 0) - (a.total || 0);
     if (diff !== 0) return diff;
@@ -400,63 +374,39 @@ function renderListas(ranking) {
     return hashA - hashB;
   });
 
+  const ganadores = sorted.slice(0, TOTAL_GANADORES);
+
   // Stats
-  document.getElementById('stTotal').textContent     = sorted.length;
-  document.getElementById('stPremiados').textContent  = Math.min(TOP_SORPRESA_N + KIT_MENOR_N, sorted.length);
-  document.getElementById('stMax').textContent        = sorted[0] ? (sorted[0].total || 0) + ' pts' : '—';
-  document.getElementById('stCorte').textContent      = sorted[TOP_SORPRESA_N] ? (sorted[TOP_SORPRESA_N].total || 0) + ' pts' : '—';
+  document.getElementById('stTotal').textContent    = sorted.length;
+  document.getElementById('stPremiados').textContent = Math.min(TOTAL_GANADORES, sorted.length);
+  document.getElementById('stMax').textContent       = sorted[0] ? (sorted[0].total || 0) + ' pts' : '—';
+  document.getElementById('stCorte').textContent     = ganadores[ganadores.length - 1] ? (ganadores[ganadores.length - 1].total || 0) + ' pts' : '—';
 
-  // Grupos
-  const top5List  = sorted.slice(0, TOP_SORPRESA_N);
-  const kitList   = sorted.slice(TOP_SORPRESA_N, TOP_SORPRESA_N + KIT_MENOR_N);
-
-  // ── Top 5: tarjetas horizontales grandes ────────────────────────────────────
-  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-  const goldColors = ['#FBBC05','#E5E7EB','#CD7F32','#A78BFA','#60A5FA'];
-  let top5HTML = '';
-  top5List.forEach((p, i) => {
-    const col   = goldColors[i] || 'var(--gold)';
-    const name  = truncar(p.nombre || p.codigo, 20);
+  // Renderizar filas
+  const medals = ['🥇','🥈','🥉'];
+  lista.innerHTML = ganadores.map((p, i) => {
     const pts   = p.total || 0;
-    top5HTML += `
-      <div style="
-        flex:1;min-width:160px;max-width:220px;
-        background:rgba(255,255,255,.04);
-        border:2px solid ${col};
-        border-radius:16px;padding:1rem .75rem;
-        text-align:center;flex-shrink:0;
-      ">
-        <div style="font-size:2rem;margin-bottom:.25rem;">${medals[i]}</div>
-        <div style="
-          width:44px;height:44px;border-radius:50%;
-          background:${col}22;border:2px solid ${col};
-          display:flex;align-items:center;justify-content:center;
-          font-family:var(--font-t);font-weight:900;font-size:1.1rem;
-          color:${col};margin:0 auto .5rem;
-        ">${inicial(p.nombre)}</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:.3rem;">${name}</div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:.4rem;">${p.codigo || ''}</div>
-        <div style="font-family:var(--font-t);font-size:1.4rem;font-weight:900;color:${col};">${pts} pts</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:.2rem;letter-spacing:1px;">🎁 PREMIO SORPRESA</div>
+    const name  = truncar(p.nombre || p.codigo, 24);
+    const medal = medals[i] || (i + 1) + '.';
+    const isTop = i < 3;
+    return `
+      <div class="winner-row ${isTop ? 'gold-row' : 'silver-row'}">
+        <span class="pos ${isTop ? 'pos-gold' : 'pos-silver'} ${i < 3 ? 'pos-top' : ''}">${medal}</span>
+        <div class="avatar ${isTop ? 'avatar-gold' : 'avatar-silver'}">${inicial(p.nombre)}</div>
+        <div class="winner-name">
+          ${name}
+          <small>${p.codigo || ''}</small>
+        </div>
+        <span class="winner-pts ${isTop ? 'pts-gold' : 'pts-silver'}">${pts} pts</span>
       </div>`;
-  });
-
-  document.getElementById('listTop5').innerHTML = top5HTML || '<div class="empty-state">—</div>';
-
-  // ── Lugares 6–15: grilla de 2 columnas ──────────────────────────────────────
-  let kitHTML = '';
-  kitList.forEach((p, i) => {
-    const globalPos = TOP_SORPRESA_N + i;
-    kitHTML += renderRow(p, globalPos, 'silver', false);
-  });
-
-  document.getElementById('listKit').innerHTML = kitHTML || '<div class="empty-state">—</div>';
+  }).join('') || '<div class="empty-state" style="grid-column:1/-1;">—</div>';
 
   // Timestamp
   const ts = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-  document.getElementById('footerTs').textContent     = 'Última actualización: ' + ts;
+  document.getElementById('footerTs').textContent        = 'Última actualización: ' + ts;
   document.getElementById('stActualizacion').textContent = '🔄 Actualizado ' + ts;
 }
+
 
 // ── Fetch desde el Web App ────────────────────────────────────────────────────
 async function fetchRanking() {
