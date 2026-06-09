@@ -377,7 +377,6 @@ function renderListas(ranking) {
   const ganadores = sorted.slice(0, TOTAL_GANADORES);
 
   // Stats
-  document.getElementById('stTotal').textContent    = sorted.length;
   document.getElementById('stPremiados').textContent = Math.min(TOTAL_GANADORES, sorted.length);
   document.getElementById('stMax').textContent       = sorted[0] ? (sorted[0].total || 0) + ' pts' : '—';
   document.getElementById('stCorte').textContent     = ganadores[ganadores.length - 1] ? (ganadores[ganadores.length - 1].total || 0) + ' pts' : '—';
