@@ -94,10 +94,16 @@ body::before{content:'';position:fixed;inset:0;
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
 .photo-count{font-size:11px;color:var(--muted);}
 
-.gallery-grid{flex:1;overflow:hidden;padding:.75rem;
+.gallery-grid{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:.75rem;
   display:grid;grid-template-columns:repeat(3,1fr);
-  grid-template-rows:repeat(2,1fr);gap:.5rem;}
-.photo-slot{border-radius:12px;overflow:hidden;position:relative;
+  align-content:start;grid-auto-rows:180px;gap:.5rem; /* el alto real de fila lo calcula fitTiles() en JS */
+  scroll-behavior:smooth;overscroll-behavior:contain;
+  scrollbar-width:thin;scrollbar-color:rgba(123,154,196,.45) transparent;}
+.gallery-grid::-webkit-scrollbar{width:8px;}
+.gallery-grid::-webkit-scrollbar-track{background:transparent;}
+.gallery-grid::-webkit-scrollbar-thumb{background:rgba(123,154,196,.45);border-radius:4px;}
+.gallery-grid::-webkit-scrollbar-thumb:hover{background:rgba(123,154,196,.75);}
+.photo-slot{border-radius:12px;overflow:hidden;position:relative;min-height:0;
   background:var(--card2);border:1px solid var(--border);}
 .photo-slot img{width:100%;height:100%;object-fit:cover;display:block;
   transition:transform .3s ease;}
@@ -290,23 +296,73 @@ async function loadPhotos() {
   }
 }
 
+const COLS = 3;               // columnas de la galería
+const TILE_RATIO = 1;         // proporción alto/ancho de cada foto (1 = cuadrada; 1.25 = vertical 4:5)
+const MIN_SLOTS = 6;          // mínimo de casillas visibles (las vacías hacen de relleno)
+
+// Ajusta el alto de cada fila al ancho real de la grilla, para que todas las fotos
+// tengan la misma proporción sin importar el tamaño de la pantalla.
+function fitTiles() {
+  const grid = document.getElementById('galleryGrid');
+  const cs = getComputedStyle(grid);
+  const inner = grid.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const gap = parseFloat(cs.columnGap) || 0;
+  const tileW = (inner - gap * (COLS - 1)) / COLS;
+  if (tileW > 0) grid.style.gridAutoRows = (tileW * TILE_RATIO).toFixed(1) + 'px';
+}
+new ResizeObserver(fitTiles).observe(document.getElementById('galleryGrid'));
+window.addEventListener('resize', fitTiles);
+let lastKey = '';             // huella de la última galería pintada
+const seenPhotos = new Set(); // fotos que ya se mostraron (para animar solo las nuevas)
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const photoKey = f => f.url || f.nombre;
+
 function renderGallery(fotos) {
   const grid = document.getElementById('galleryGrid');
-  const recientes = fotos.slice(-6).reverse();
-  const slots = Array(6).fill(null).map((_,i) => recientes[i] || null);
-  grid.innerHTML = slots.map((f, i) => f
-    ? `<div class="photo-slot" style="animation:fadeIn .5s ease ${i*0.08}s both;">
-        <img src="${f.url}" alt="${f.nombre}" loading="lazy"
-          onerror="this.style.display='none';this.parentElement.querySelector('.photo-name').textContent='${f.nombre}'"/>
-        <div class="photo-badge-gemini">✨ IA</div>
-        ${i===0?'<div class="photo-badge-new">NUEVA</div>':''}
-        <div class="photo-name">${f.nombre}</div>
-      </div>`
-    : `<div class="photo-slot photo-empty">
+
+  // Si no cambió nada desde el último refresco, no tocamos el DOM:
+  // así no se reinicia el scroll ni se re-animan las fotos.
+  const key = fotos.map(photoKey).join('|');
+  if (key === lastKey) return;
+  lastKey = key;
+
+  // Todas las fotos, la más reciente primero (el backend las entrega de la más antigua a la más nueva)
+  const todas = fotos.slice().reverse();
+  const slots = todas.concat(Array(Math.max(0, MIN_SLOTS - todas.length)).fill(null));
+  const firstLoad = seenPhotos.size === 0;
+  const prevScroll = grid.scrollTop;
+
+  let nuevas = 0;
+  grid.innerHTML = slots.map((f, i) => {
+    if (!f) {
+      return `<div class="photo-slot photo-empty">
         <div class="photo-empty-icon">${['✨','🤖','📸'][i%3]}</div>
         <div class="photo-empty-text">Esperando fotos…</div>
-      </div>`
-  ).join('');
+      </div>`;
+    }
+    const esNueva = !seenPhotos.has(photoKey(f));
+    seenPhotos.add(photoKey(f));
+    // Animación escalonada solo para las fotos que aparecen por primera vez (máx. ~1 s de escalonado)
+    const anim = esNueva ? `animation:fadeIn .5s ease ${Math.min(nuevas++, 12)*0.08}s both;` : '';
+    return `<div class="photo-slot" style="${anim}">
+        <img src="${esc(f.url)}" alt="${esc(f.nombre)}" loading="lazy"
+          onerror="this.style.display='none'"/>
+        <div class="photo-badge-gemini">✨ IA</div>
+        ${i===0?'<div class="photo-badge-new">NUEVA</div>':''}
+        <div class="photo-name">${esc(f.nombre)}</div>
+      </div>`;
+  }).join('');
+
+  // Conservar la posición de scroll que tenía la persona (el scroll suave no debe animar este reajuste)
+  if (!firstLoad && prevScroll > 0) {
+    grid.style.scrollBehavior = 'auto';
+    grid.scrollTop = prevScroll;
+    grid.style.scrollBehavior = '';
+  }
 }
 
 loadPhotos();
