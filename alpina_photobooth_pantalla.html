@@ -33,15 +33,16 @@ body::before{content:'';position:fixed;inset:0;
 .pts-badge{background:var(--teal);color:#fff;font-family:'Montserrat',sans-serif;
   font-size:.85rem;font-weight:800;padding:.35rem 1.1rem;border-radius:100px;}
 
-.main{flex:1;display:grid;grid-template-columns:1.1fr 1fr;gap:0;overflow:hidden;position:relative;z-index:1;}
+/* 1/4 indicaciones · 3/4 galería */
+.main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);gap:0;overflow:hidden;position:relative;z-index:1;}
 
 /* ── IZQUIERDA ── */
-.left{padding:1.1rem 1.5rem 1.1rem 2rem;display:flex;flex-direction:column;gap:.75rem;
-  border-right:1px solid var(--border);overflow-y:auto;}
+.left{padding:.9rem 1rem .9rem 1.25rem;display:flex;flex-direction:column;gap:.6rem;
+  border-right:1px solid var(--border);overflow-y:auto;min-height:0;}
 
 .frase{background:linear-gradient(135deg,rgba(20,184,166,.3),rgba(0,61,165,.4));
   border:1px solid rgba(20,184,166,.3);border-radius:16px;padding:.875rem 1.1rem;text-align:center;}
-.frase-text{font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;line-height:1.4;}
+.frase-text{font-family:'Montserrat',sans-serif;font-size:.9rem;font-weight:800;line-height:1.35;}
 .frase-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:.25rem;}
 
 .section-label{font-size:10px;color:var(--muted);letter-spacing:2px;
@@ -63,7 +64,7 @@ body::before{content:'';position:fixed;inset:0;
   font-weight:700;margin-top:3px;letter-spacing:.5px;}
 
 /* Prompts Gemini */
-.prompts-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;}
+.prompts-grid{display:grid;grid-template-columns:1fr;gap:.35rem;}
 .prompt-chip{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);
   border-radius:10px;padding:.4rem .65rem;font-size:10.5px;color:#C4B5FD;
   line-height:1.4;cursor:default;}
@@ -71,9 +72,9 @@ body::before{content:'';position:fixed;inset:0;
 .prompt-chip::after{content:'"';opacity:.6;}
 
 /* QR */
-.qr-row{display:flex;align-items:center;gap:1rem;
-  background:var(--card);border:2px solid var(--teal);border-radius:16px;padding:.875rem 1rem;}
-.qr-img{width:85px;height:85px;border-radius:10px;overflow:hidden;flex-shrink:0;
+.qr-row{display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6rem;
+  background:var(--card);border:2px solid var(--teal);border-radius:16px;padding:.75rem 1rem;}
+.qr-img{width:130px;height:130px;border-radius:10px;overflow:hidden;flex-shrink:0;
   background:#fff;display:flex;align-items:center;justify-content:center;}
 .qr-img img{width:100%;height:100%;object-fit:contain;}
 .qr-info{flex:1;}
@@ -81,6 +82,22 @@ body::before{content:'';position:fixed;inset:0;
   color:var(--teal);margin-bottom:.2rem;letter-spacing:.5px;}
 .qr-sub{font-size:10px;color:var(--muted);line-height:1.5;}
 .qr-ok{font-size:10px;color:var(--g-green);margin-top:.2rem;font-weight:600;}
+
+/* Pantallas bajas (laptops 1366×768, etc.): compactar para que todo el panel quepa sin scroll */
+@media (max-height:900px){
+  .left{gap:.45rem;padding-top:.6rem;padding-bottom:.6rem;}
+  .frase{padding:.55rem .8rem;}
+  .frase-text{font-size:.82rem;}
+  .frase-sub{display:none;}
+  .steps{gap:.35rem;}
+  .step{padding:.4rem .65rem;}
+  .step-sub{font-size:10.5px;line-height:1.4;}
+  .step-tag{display:none;}
+  .prompt-chip{padding:.3rem .6rem;font-size:10px;}
+  .prompts-grid{gap:.25rem;}
+  .qr-row{flex-direction:row;text-align:left;gap:.7rem;padding:.55rem .75rem;}
+  .qr-img{width:84px;height:84px;}
+}
 
 /* ── DERECHA: galería ── */
 .right{display:flex;flex-direction:column;overflow:hidden;}
@@ -110,17 +127,46 @@ body::before{content:'';position:fixed;inset:0;
 .photo-slot:hover img{transform:scale(1.03);}
 .photo-name{position:absolute;bottom:0;left:0;right:0;
   background:linear-gradient(transparent,rgba(0,0,0,.85));
-  padding:.5rem .6rem .4rem;font-size:10px;font-weight:600;line-height:1.3;}
-.photo-badge-new{position:absolute;top:.4rem;right:.4rem;
-  background:var(--g-green);color:#fff;font-size:9px;font-weight:700;
-  padding:2px 6px;border-radius:8px;}
-.photo-badge-gemini{position:absolute;top:.4rem;left:.4rem;
-  background:rgba(139,92,246,.9);color:#fff;font-size:9px;font-weight:700;
-  padding:2px 6px;border-radius:8px;}
+  padding:1.2rem .8rem .6rem;font-size:13px;font-weight:600;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.photo-badge-new{position:absolute;top:.55rem;right:.55rem;
+  background:var(--g-green);color:#fff;font-size:11px;font-weight:700;
+  padding:3px 9px;border-radius:10px;}
+.photo-badge-gemini{position:absolute;top:.55rem;left:.55rem;
+  background:rgba(139,92,246,.9);color:#fff;font-size:11px;font-weight:700;
+  padding:3px 9px;border-radius:10px;}
+.photo-slot[data-i]{cursor:zoom-in;}
+.photo-slot[data-i]:focus-visible{outline:3px solid var(--g-blue);outline-offset:-3px;}
+.photo-slot[data-i]:hover{border-color:rgba(255,255,255,.35);}
 .photo-empty{display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:.3rem;opacity:.25;}
 .photo-empty-icon{font-size:1.8rem;}
 .photo-empty-text{font-size:10px;color:var(--muted);}
+
+/* ── Previsualización de una foto (dentro de la galería) ── */
+.gallery-wrap{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;}
+.preview{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;
+  background:rgba(0,10,30,.95);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+.preview.open{display:flex;animation:fadeIn .25s ease both;}
+.preview-stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;
+  padding:1.25rem 5rem;touch-action:pan-y;}
+.preview-img{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);background:var(--card2);}
+.preview-btn{position:absolute;width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);color:#fff;font-size:26px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;}
+.preview-btn:hover{background:rgba(255,255,255,.2);transform:scale(1.06);}
+.preview-btn:focus-visible{outline:3px solid var(--g-blue);outline-offset:2px;}
+.preview-btn[disabled]{opacity:.25;cursor:default;pointer-events:none;}
+.preview-prev{left:1rem;top:50%;margin-top:-26px;}
+.preview-next{right:1rem;top:50%;margin-top:-26px;}
+.preview-close{right:1rem;top:1rem;width:44px;height:44px;font-size:20px;}
+.preview-bar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.7rem 1.5rem;border-top:1px solid var(--border);background:rgba(0,8,24,.6);}
+.preview-name{font-family:'Montserrat',sans-serif;font-size:.95rem;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.preview-meta{display:flex;align-items:center;gap:.75rem;flex-shrink:0;font-size:12px;color:var(--muted);}
+.preview-badge{background:rgba(139,92,246,.9);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;}
 
 .gallery-footer{padding:.35rem 1rem;background:rgba(0,8,24,.5);
   border-top:1px solid var(--border);text-align:center;flex-shrink:0;}
@@ -250,6 +296,7 @@ body::before{content:'';position:fixed;inset:0;
       <div class="photo-count" id="photoCount">Cargando…</div>
     </div>
 
+    <div class="gallery-wrap">
     <div class="gallery-grid" id="galleryGrid">
       <div class="photo-slot photo-empty"><div class="photo-empty-icon">✨</div><div class="photo-empty-text">¡Sé el primero!</div></div>
       <div class="photo-slot photo-empty"><div class="photo-empty-icon">🤖</div><div class="photo-empty-text">Esperando fotos…</div></div>
@@ -258,6 +305,20 @@ body::before{content:'';position:fixed;inset:0;
       <div class="photo-slot photo-empty"><div class="photo-empty-icon">🤖</div><div class="photo-empty-text">Esperando fotos…</div></div>
       <div class="photo-slot photo-empty"><div class="photo-empty-icon">📸</div><div class="photo-empty-text">Esperando fotos…</div></div>
     </div>
+
+    <div class="preview" id="preview" role="dialog" aria-modal="true" aria-label="Vista previa de la foto">
+      <div class="preview-stage" id="previewStage">
+        <img class="preview-img" id="previewImg" alt=""/>
+        <button class="preview-btn preview-close" id="previewClose" aria-label="Cerrar vista previa">✕</button>
+        <button class="preview-btn preview-prev" id="previewPrev" aria-label="Foto anterior">‹</button>
+        <button class="preview-btn preview-next" id="previewNext" aria-label="Foto siguiente">›</button>
+      </div>
+      <div class="preview-bar">
+        <div class="preview-name" id="previewName"></div>
+        <div class="preview-meta"><span class="preview-badge">✨ IA</span><span id="previewCount"></span></div>
+      </div>
+    </div>
+    </div><!-- /gallery-wrap -->
 
     <div class="gallery-footer">
       <div class="gallery-footer-text">Galería generada con IA · Se actualiza automáticamente · <span id="lastUpdate">—</span></div>
@@ -320,9 +381,27 @@ function esc(s) {
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 const photoKey = f => f.url || f.nombre;
+const $ = id => document.getElementById(id);
+
+// Drive suele entregar miniaturas pequeñas. Si la URL admite un tamaño (sz=w400 o =w400),
+// pedimos uno mayor; si falla, se vuelve a la URL original (ver imgFallback).
+function sized(url, w) {
+  if (!url) return url;
+  return String(url)
+    .replace(/([?&]sz=)[wsh]?\d+/i, '$1w' + w)
+    .replace(/(=[ws])\d+(-[a-z0-9-]+)?$/i, '$1' + w + '$2');
+}
+function imgFallback(img) {
+  const o = img.dataset.orig;
+  if (o && img.getAttribute('src') !== o) img.src = o;
+  else img.style.display = 'none';
+}
+
+let current = [];       // fotos de la galería, la más reciente primero
+let previewKey = null;  // foto abierta en la previsualización (null = cerrada)
 
 function renderGallery(fotos) {
-  const grid = document.getElementById('galleryGrid');
+  const grid = $('galleryGrid');
 
   // Si no cambió nada desde el último refresco, no tocamos el DOM:
   // así no se reinicia el scroll ni se re-animan las fotos.
@@ -331,8 +410,8 @@ function renderGallery(fotos) {
   lastKey = key;
 
   // Todas las fotos, la más reciente primero (el backend las entrega de la más antigua a la más nueva)
-  const todas = fotos.slice().reverse();
-  const slots = todas.concat(Array(Math.max(0, MIN_SLOTS - todas.length)).fill(null));
+  current = fotos.slice().reverse();
+  const slots = current.concat(Array(Math.max(0, MIN_SLOTS - current.length)).fill(null));
   const firstLoad = seenPhotos.size === 0;
   const prevScroll = grid.scrollTop;
 
@@ -348,9 +427,10 @@ function renderGallery(fotos) {
     seenPhotos.add(photoKey(f));
     // Animación escalonada solo para las fotos que aparecen por primera vez (máx. ~1 s de escalonado)
     const anim = esNueva ? `animation:fadeIn .5s ease ${Math.min(nuevas++, 12)*0.08}s both;` : '';
-    return `<div class="photo-slot" style="${anim}">
-        <img src="${esc(f.url)}" alt="${esc(f.nombre)}" loading="lazy"
-          onerror="this.style.display='none'"/>
+    return `<div class="photo-slot" data-i="${i}" role="button" tabindex="0"
+        aria-label="Ver foto ${esc(f.nombre)}" style="${anim}">
+        <img src="${esc(sized(f.url, 800))}" data-orig="${esc(f.url)}" alt="${esc(f.nombre)}" loading="lazy"
+          onerror="imgFallback(this)"/>
         <div class="photo-badge-gemini">✨ IA</div>
         ${i===0?'<div class="photo-badge-new">NUEVA</div>':''}
         <div class="photo-name">${esc(f.nombre)}</div>
@@ -363,7 +443,87 @@ function renderGallery(fotos) {
     grid.scrollTop = prevScroll;
     grid.style.scrollBehavior = '';
   }
+
+  // Si hay una foto abierta, la mantenemos (su posición puede haber cambiado); si ya no existe, se cierra.
+  if (previewKey != null) {
+    const i = current.findIndex(f => photoKey(f) === previewKey);
+    i < 0 ? closePreview() : showPreview(i);
+  }
 }
+
+/* ── Previsualización ── */
+function showPreview(i) {
+  const f = current[i];
+  if (!f) return closePreview();
+  previewKey = photoKey(f);
+  const img = $('previewImg');
+  if (img.dataset.shown !== previewKey) {       // no recargar la imagen en cada refresco
+    img.dataset.shown = previewKey;
+    img.dataset.orig = f.url;
+    img.style.display = '';
+    img.src = sized(f.url, 1600);
+  }
+  img.alt = f.nombre || '';
+  $('previewName').textContent = f.nombre || '';
+  $('previewCount').textContent = (i + 1) + ' / ' + current.length;
+  $('previewPrev').disabled = i === 0;
+  $('previewNext').disabled = i === current.length - 1;
+  const abrir = !$('preview').classList.contains('open');
+  $('preview').classList.add('open');
+  if (abrir) $('previewClose').focus({preventScroll: true});
+  // precarga de las vecinas para que el cambio sea inmediato
+  [i - 1, i + 1].forEach(j => { if (current[j]) new Image().src = sized(current[j].url, 1600); });
+}
+
+function closePreview() {
+  const i = current.findIndex(f => photoKey(f) === previewKey);
+  previewKey = null;
+  $('preview').classList.remove('open');
+  $('previewImg').dataset.shown = '';
+  // dejar la galería en la foto que se estaba viendo
+  const grid = $('galleryGrid');
+  const tile = i >= 0 ? grid.querySelector('.photo-slot[data-i="' + i + '"]') : null;
+  if (tile) {
+    grid.style.scrollBehavior = 'auto';   // salto inmediato, sin animación
+    tile.scrollIntoView({block: 'nearest'});
+    grid.style.scrollBehavior = '';
+    tile.focus({preventScroll: true});
+  }
+}
+
+function stepPreview(d) {
+  const i = current.findIndex(f => photoKey(f) === previewKey);
+  if (i >= 0 && current[i + d]) showPreview(i + d);
+}
+
+$('galleryGrid').addEventListener('click', e => {
+  const t = e.target.closest('.photo-slot[data-i]');
+  if (t) showPreview(+t.dataset.i);
+});
+$('galleryGrid').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.photo-slot[data-i]')) {
+    e.preventDefault();
+    showPreview(+e.target.dataset.i);
+  }
+});
+$('previewClose').addEventListener('click', closePreview);
+$('previewPrev').addEventListener('click', () => stepPreview(-1));
+$('previewNext').addEventListener('click', () => stepPreview(1));
+$('previewStage').addEventListener('click', e => { if (e.target === $('previewStage')) closePreview(); });
+document.addEventListener('keydown', e => {
+  if (previewKey == null) return;
+  if (e.key === 'Escape') closePreview();
+  else if (e.key === 'ArrowLeft') stepPreview(-1);
+  else if (e.key === 'ArrowRight') stepPreview(1);
+});
+let touchX = null;   // deslizar con el dedo para cambiar de foto
+$('previewStage').addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive: true});
+$('previewStage').addEventListener('touchend', e => {
+  if (touchX == null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) > 60) stepPreview(dx < 0 ? 1 : -1);
+}, {passive: true});
 
 loadPhotos();
 setInterval(loadPhotos, REFRESH_MS);
